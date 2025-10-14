@@ -1,0 +1,13 @@
+# Target labels
+ tfm
+# Source files and their labels
+C:/Users/Irius/nrf_projects/DECT-Release/build/modules/trusted-firmware-m/CMakeFiles/tfm
+C:/Users/Irius/nrf_projects/DECT-Release/build/modules/trusted-firmware-m/CMakeFiles/tfm.rule
+C:/Users/Irius/nrf_projects/DECT-Release/build/modules/trusted-firmware-m/CMakeFiles/tfm-complete.rule
+C:/Users/Irius/nrf_projects/DECT-Release/build/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-build.rule
+C:/Users/Irius/nrf_projects/DECT-Release/build/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-configure.rule
+C:/Users/Irius/nrf_projects/DECT-Release/build/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-download.rule
+C:/Users/Irius/nrf_projects/DECT-Release/build/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-install.rule
+C:/Users/Irius/nrf_projects/DECT-Release/build/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-mkdir.rule
+C:/Users/Irius/nrf_projects/DECT-Release/build/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-patch.rule
+C:/Users/Irius/nrf_projects/DECT-Release/build/modules/trusted-firmware-m/tfm-prefix/src/tfm-stamp/tfm-update.rule
