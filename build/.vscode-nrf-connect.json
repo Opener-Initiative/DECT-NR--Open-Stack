@@ -1,10 +1,10 @@
 {
-  "toolchainPath": "c:\\ncs\\toolchains\\c57af46cb7",
-  "sdkPath": "c:\\ncs\\v2.5.0",
-  "board": "nrf9161dk_nrf9161_ns",
-  "boardDir": "c:/ncs/v2.5.0/zephyr/boards/arm/nrf9161dk_nrf9161",
+  "toolchainPath": "c:\\ncs\\toolchains\\c1a76fddb2",
+  "sdkPath": "c:\\ncs\\v3.1.1",
+  "board": "nrf9161dk/nrf9161/ns",
+  "boardDir": "c:\\ncs\\v3.1.1\\zephyr\\boards\\nordic\\nrf9161dk",
   "boardDirs": [
-    "c:/ncs/v2.5.0/zephyr/boards/arm/nrf9161dk_nrf9161"
+    "c:\\ncs\\v3.1.1\\zephyr\\boards\\nordic\\nrf9161dk"
   ],
   "optimizations": "debug",
   "cmakeArgs": [],
@@ -15,7 +15,7 @@
   "kconfigFragments": [],
   "snippets": [],
   "dtcOverlays": [
-    "htu21d_sensor.overlay"
+    "overlay/htu21d_sensor.overlay"
   ],
   "extraDtcOverlays": []
 }

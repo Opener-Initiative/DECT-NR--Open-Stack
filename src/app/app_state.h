@@ -9,6 +9,8 @@ struct timer_event;
 
 /// @brief FSM states - Estados de la máquina de estados
 enum app_states {
+    ASSOC_WIN_STATE = 100,
+    DATA_WIN_STATE = 200,
     SEND_BEACON = 1,
     SEND_ASSOC_REQ = 3,
     SEND_ASSOC_RESP = 5,
@@ -19,6 +21,7 @@ enum app_states {
     SEND_METRIC_RESP = 17,
     SEND_DEASSOC = 19,
     FT_OPERATIONS = 21,
+    SEND_DUMMY_DATA = 23,
 
     WAIT_BEACON = 2,
     WAIT_ASSOC_REQ = 4,
@@ -28,6 +31,8 @@ enum app_states {
     WAIT_KAIE = 12,
     WAIT_METRIC_REQ = 14,
     WAIT_METRIC_RESP = 16,
+    WAIT_BROADCAST_IND = 18,
+    PT_OPERATIONS = 20
 };
 
 /// @brief Initialization of the application
@@ -45,6 +50,9 @@ void app_on_uart_data(const uint8_t *data, size_t len);
 /// @param evt 
 void app_on_timer_event(const struct timer_event *evt);
 
+void modem_op_complete(void);
+void modem_op_start(void);
+
 //// Controlled access to state variables
 int app_get_state(void);
 int app_get_next_state(void);
@@ -52,5 +60,10 @@ void app_set_next_state(int next);
 
 //// For testing & debugging purposes
 void app_test(void);
+
+bool app_ftOperationsDone_get(void);
+void app_ftOperationsDone_set(bool value);
+
+void app();
 
 #endif

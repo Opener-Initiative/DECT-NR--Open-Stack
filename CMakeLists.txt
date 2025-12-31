@@ -7,6 +7,8 @@ project(TX-RX)
 file(GLOB_RECURSE APP_SOURCES "src/*.c")
 
 list(FILTER APP_SOURCES EXCLUDE REGEX ".*/others/.*")
+list(FILTER APP_SOURCES EXCLUDE REGEX "/drivers/display_handler.*")
+list(FILTER APP_SOURCES EXCLUDE REGEX "/fsm/fsm.c")
 
 target_sources(app PRIVATE ${APP_SOURCES})
 

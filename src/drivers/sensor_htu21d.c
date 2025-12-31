@@ -1,4 +1,5 @@
 #include "sensor_htu21d.h"
+#include <zephyr/device.h>
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/logging/log.h>
@@ -13,25 +14,24 @@ static const uint16_t htu_addr = 0x40;
 int sensor_htu21d_init(void)
 {
     //// Returning values of this methods do not indicate if the sensor is present or not. 
-    //// Using i2c1 controller. To use other controller modify devicetree
-    
-    i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c1));
+    //// Using i2c2 controller. To use other controller modify devicetree
+
+    i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c2));
     if (!device_is_ready(i2c_dev)) {
-        LOG_WRN("I2C controller 'i2c1' not ready or does not exist");
+        LOG_WRN("I2C controller 'i2c2' not ready or does not exist");
         return -ENODEV;
     }
+
+    LOG_INF("I2C controller 'i2c2' ready, using addr 0x%02x", htu_addr);
+    LOG_INF("HTU21D I2C initialized (bus i2c2)");
+
     if(sensor_htu21d_is_ready())
-    {
-        LOG_INF("I2C controller 'i2c1' ready, using addr 0x%02x", htu_addr);
-        LOG_INF("HTU21D I2C initialized (bus i2c1)");
-    }
+        LOG_INF("HTU21D sensor detected and ready");
     else
+    {
         LOG_WRN("HTU21D sensor not detected or not ready");
-
-    
-
-    
-
+        return -1;
+    }
     return 0;
 }
 

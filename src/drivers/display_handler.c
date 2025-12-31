@@ -56,6 +56,13 @@ static void display_thread(void *p1, void *p2, void *p3)
     }
 }
 
+/* Increase display thread stack in case LVGL and display driver need more
+ * temporary stack during formatting/flush operations when a real display is
+ * connected. If this still crashes, try higher values or investigate
+ * per-driver stack usage. */
+/* Increase display thread stack to handle LVGL/driver stack usage when a
+ * real SSD1306 is connected; helps rule out stack overflow during init.
+ */
 K_THREAD_DEFINE(display_thread_id, 2048, display_thread, NULL, NULL, NULL, 6, 0, 0);
 
 int display_init(void)

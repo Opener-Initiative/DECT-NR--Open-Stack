@@ -11,35 +11,43 @@
 #include "../config/device_config.h"
 #include "../common/utils.h"
 #include "../protocol/procedures.h"
+/* Consult app state to decide whether to enqueue RX packets */
 #include "../app/app_state.h"
+#include "../common/data_buffers.h"
+#include "../common/modem_operator.h"
 
 LOG_MODULE_REGISTER(modem_h);
 
-K_SEM_DEFINE(modem, 1, 1);
-static int rxHandle = 31400;
+/* semáforo para serializar llamadas async al modem (copiado de tu main.c) */
+K_SEM_DEFINE(modem, 0, 1);
+K_SEM_DEFINE(no_modem, 0, 1);
+/* Flag set on fatal modem error; marked unused to avoid warnings until used */
+static bool modem_fatal_error_flag __attribute__((unused));
+static uint64_t modem_time;
+
+static int rxHandle __attribute__((unused)) = 31400;
 static int txHandle = 1;
 struct nrf_modem_dect_phy_rx_params rxOpsParams = {0};
 union nrf_modem_dect_phy_hdr phyHeader;
 static uint8_t _txData[DATA_LEN];
-static uint8_t _rxData[DATA_LEN];
+static uint8_t _rxData[DATA_LEN] __attribute__((unused));
 
 static struct TXParams tp;
+static bool setContinuousRx = false;
 
-static int crc_errors = 0;
+
+/* variables de estado local (adaptadas de main.c) */
+static int crc_errors __attribute__((unused)) = 0;
 static float rssi_average = 0;
 static int n = 0;
-static int8_t rssi_measure = 0;
+static int8_t rssi_measure __attribute__((unused)) = 0;
 plcf_10_t rx_phy_hdr[5];
 plcf_20_t rx_phy_hdr_2[10];
 uint16_t transmitter_srdid;
+uint8_t networkID;
 
-struct nrf_modem_dect_phy_rssi_params rssiParams = {
-  .start_time = 0,
-  .handle = 4,
-  .carrier = CARRIER,
-  .duration = 24,
-  .reporting_interval = NRF_MODEM_DECT_PHY_RSSI_INTERVAL_24_SLOTS,
-};
+bool modem_free = true;
+
 
 static int32_t calcRSSI(int16_t recrssi, int is_success)
 {
@@ -52,94 +60,126 @@ static int32_t calcRSSI(int16_t recrssi, int is_success)
     return (int32_t)resp;
 }
 
-void init(const uint64_t *time, int16_t temp, enum nrf_modem_dect_phy_err err, const struct nrf_modem_dect_phy_modem_cfg *cfg)
+
+/* Callback after init operation. */
+static void on_init(const struct nrf_modem_dect_phy_init_event *evt)
 {
-  if(err==0) {
-    // LOG_INF("DECT Init done, temperature %d", temp);
-  }
-  else {
+	if (evt->err) {
     LOG_ERR("INIT FAILED");
-    LOG_INF("Init failed, Exit\n");
-  }
-  k_sem_give(&modem);
+    LOG_INF("Init failed\n");
+  modem_fatal_error_flag = true;
+		return;
+	}
+
+	k_sem_give(&modem);
 }
 
-void op_complete(const uint64_t *time, int16_t temperature, enum nrf_modem_dect_phy_err err, uint32_t handle)
+/* Callback after deinit operation. */
+static void on_deinit(const struct nrf_modem_dect_phy_deinit_event *evt)
 {
-  LOG_DBG("operation_complete_cb Status %d, Temp %d, Handle %d", err, temperature, handle);
-  k_sem_give(&modem);
-  return;
+	if (evt->err) {
+		LOG_ERR("Deinit failed, err %d", evt->err);
+		return;
+	}
+
+	k_sem_give(&no_modem);
 }
 
-//// stf_cover_seq_control callback implemented as empty for newer versions
-void stf_cover_seq_control(const uint64_t *time, int err) {
-  LOG_DBG("stf_cover_seq_control callback called with err %d", err);
-}
-
-void rssi(const uint64_t *time, const struct nrf_modem_dect_phy_rssi_meas *status)
-{   
-  int8_t measure = *(status->meas);
-  printk("%d: %+d\n", status->carrier, measure);
-  // LOG_INF("RSSI Measurement: %+d dBm\n", (int8_t)status->meas);
-  // measured_rssi = status->meas;
-  // LOG_INF("RSSI meas length: %d\n", status->meas_len);
-
-  rssi_measure = measure;
-
-  k_sem_give(&modem);
-  return;
-}
-
-void pdc_crc_err_cb(const uint64_t *time, const struct nrf_modem_dect_phy_rx_pdc_crc_failure *crc_failure)
+static void on_activate(const struct nrf_modem_dect_phy_activate_event *evt)
 {
-    crc_errors++;
-    int16_t resp = calcRSSI(crc_failure->rssi_2, 0);
-    LOG_INF("PDC CRC ERROR, rssi_2 %d, crc error count %d", resp, crc_errors);
+	if (evt->err) {
+		LOG_ERR("Activate failed, err %d", evt->err);
+  modem_fatal_error_flag = true;
+		return;
+	}
+
+	k_sem_give(&modem);
 }
 
-void pdc_crc_err(
-  const uint64_t *time, const struct nrf_modem_dect_phy_rx_pdc_crc_failure *crc_failure)
+static void on_deactivate(const struct nrf_modem_dect_phy_deactivate_event *evt)
 {
-  crc_errors++;
-  int16_t resp=calcRSSI(crc_failure->rssi_2, 0);
-  LOG_INF("PDC CRC ERROR, rssi_2, %d, crc error count, %d, continuing", resp, crc_errors);
+
+	if (evt->err) {
+		LOG_ERR("Deactivate failed, err %d", evt->err);
+		return;
+	}
+
+	k_sem_give(&no_modem);
 }
 
-void link_config(const uint64_t *time, enum nrf_modem_dect_phy_err err)
+static void on_configure(const struct nrf_modem_dect_phy_configure_event *evt)
 {
-  return;
+	if (evt->err) {
+		LOG_ERR("Configure failed, err %d", evt->err);
+		return;
+	}
+
+	k_sem_give(&modem);
 }
 
-void time_get(const uint64_t *time, enum nrf_modem_dect_phy_err err)
+/* Callback after link configuration operation. */
+static void on_link_config(const struct nrf_modem_dect_phy_link_config_event *evt)
 {
-  LOG_DBG("Time query response time %"PRIu64" Status %d", *time, err); 
+	LOG_DBG("link_config cb time %"PRIu64" status %d", modem_time, evt->err);
 }
 
-void capability_get(const uint64_t *time, enum nrf_modem_dect_phy_err err,const struct nrf_modem_dect_phy_capability *capability)
+static void on_radio_config(const struct nrf_modem_dect_phy_radio_config_event *evt)
 {
-  LOG_DBG("Capability query response FIXME %"PRIu64" Status %d", *time, err); 
+	if (evt->err) {
+		LOG_ERR("Radio config failed, err %d", evt->err);
+		return;
+	}
+
+	k_sem_give(&modem);
 }
 
-void deinit(const uint64_t *time, enum nrf_modem_dect_phy_err err)
+/* Callback after capability get operation. */
+static void on_capability_get(const struct nrf_modem_dect_phy_capability_get_event *evt)
 {
-  LOG_DBG("DEINIT response time %"PRIu64" Status %d", *time, err); 
+	LOG_DBG("capability_get cb time %"PRIu64" status %d", modem_time, evt->err);
+
+    LOG_INF("DECT PHY Capabilities:");
+    LOG_INF("DECT Version: %d", evt->capability);
 }
 
-void rx_stop(const uint64_t *time, enum nrf_modem_dect_phy_err err, uint32_t handle)
+static void on_bands_get(const struct nrf_modem_dect_phy_band_get_event *evt)
 {
-  LOG_DBG("operation_stop_cb Status %d Handle %d", err, handle);
-  k_sem_give(&modem);
-  return;
+	LOG_DBG("bands_get cb status %d", evt->err);
 }
 
-void pcc(
-  const uint64_t *time,
-  const struct nrf_modem_dect_phy_rx_pcc_status *status,
-  const union nrf_modem_dect_phy_hdr *hdr)
+static void on_latency_info_get(const struct nrf_modem_dect_phy_latency_info_event *evt)
 {
-  LOG_DBG("pcc_cb phy_header_valid %d rssi_2 %d", status->header_status, status->rssi_2);
+	LOG_DBG("latency_info_get cb status %d", evt->err);
+}
+
+/* Callback after time query operation. */
+static void on_time_get(const struct nrf_modem_dect_phy_time_get_event *evt)
+{
+	LOG_DBG("time_get cb time %"PRIu64" status %d", modem_time, evt->err);
+    LOG_INF("Current time: %d", modem_time);
+}
+
+static void on_cancel(const struct nrf_modem_dect_phy_cancel_event *evt)
+{
+	LOG_DBG("on_cancel cb status %d", evt->err);
+	k_sem_give(&modem);
+}
+
+/* Operation complete notification. */
+static void on_op_complete(const struct nrf_modem_dect_phy_op_complete_event *evt)
+{
+	LOG_DBG("op_complete cb time %"PRIu64" status %d", modem_time, evt->err);
+    // LOG_INF("Operation complete, handle %d, err %x", evt->handle, evt->err);
+	k_sem_give(&modem);
+    modem_op_complete();
+}
+
+/* Physical Control Channel reception notification. */
+static void on_pcc(const struct nrf_modem_dect_phy_pcc_event *evt)
+{
+//   LOG_INF("pcc_cb phy_header_valid %d rssi_2 %d", evt->header_status, evt->rssi_2);
   
-  memcpy(rx_phy_hdr->plcf, &hdr->type_1, 5);
+  memcpy(rx_phy_hdr->plcf, &evt->hdr, 5);
   // printk("Net ID: %x\n", hdr->type_1[1]);
 
   get_plcf_1_rev(rx_phy_hdr);
@@ -148,115 +188,277 @@ void pcc(
   if(rx_phy_hdr->HeaderFormat == 0){
     // LOG_INF("PCC received, type 0, Short Header");
     transmitter_srdid = rx_phy_hdr->TransmitterIdentity;
+    networkID = rx_phy_hdr->ShortNetworkID;
     // LOG_INF("Transmitter ID: %x\n", transmitter_srdid);
   }
   else if(rx_phy_hdr->HeaderFormat == 1)
   {
     // LOG_INF("PCC received, type 1, Long Header");
-    memcpy(rx_phy_hdr_2->plcf, &hdr->type_2, 10);
+    memcpy(rx_phy_hdr_2->plcf, &evt->hdr, 10);
     get_plcf_2_rev(rx_phy_hdr_2);
     transmitter_srdid = rx_phy_hdr_2->TransmitterIdentity;
+    networkID = rx_phy_hdr_2->ShortNetworkID;
     // LOG_INF("Transmitter ID: %x\n", transmitter_srdid);
   }
-
-  return;
+  
+    // LOG_INF("Transmitter ID: %x\n", transmitter_srdid);
+    // LOG_INF("Received header from device ID %d",
+    // evt->hdr.hdr_type_1.transmitter_id_hi << 8 | evt->hdr.hdr_type_1.transmitter_id_lo);
 }
 
-void pcc_crc_err(const uint64_t *time, const struct nrf_modem_dect_phy_rx_pcc_crc_failure *crc_failure)
+/* Physical Control Channel CRC error notification. */
+static void on_pcc_crc_err(const struct nrf_modem_dect_phy_pcc_crc_failure_event *evt)
 {
-  crc_errors++;
-  int16_t resp=calcRSSI(crc_failure->rssi_2, 0);
-  LOG_INF("PCC CRC ERROR, rssi_2, %d, crc error count,  %d, continuing", resp, crc_errors);
+    LOG_INF("PCC CRC ERROR, rssi_2, %d, crc error count,  %d, continuing", calcRSSI(evt->rssi_2, 0), ++crc_errors);
+	LOG_DBG("pcc_crc_err cb time %"PRIu64"", modem_time);
 }
 
-
-void pdc(const uint64_t *time,
-         const struct nrf_modem_dect_phy_rx_pdc_status *status,
-         const void *data, uint32_t len)
+/* Physical Data Channel reception notification. */
+static void on_pdc(const struct nrf_modem_dect_phy_pdc_event *evt)
 {
-    LOG_INF("Packet received (len=%d)", len);
-    int32_t rx_rssi = calcRSSI(status->rssi_2, 1);
-    // LOG_INF("pdc_cb rssi_2 %d, len %d", rx_rssi, len);
+	/* Received RSSI value is in fixed precision format Q14.1 */
+	// LOG_INF("Received data (RSSI: %d.%d): %s",
+	// 	(evt->rssi_2 / 2), (evt->rssi_2 & 0b1) * 5, (char *)evt->data);
 
-    //// Queue data for later processing depending on app state
-    rx_fifo_put(data, len);
+    LOG_INF("________________________________________________________");
+    LOG_INF("Packet received (len=%d)", evt->len);
+    // k_msleep(200);
+    int32_t rx_rssi = calcRSSI(evt->rssi_2, 1);
+    // LOG_INF("pdc_cb rssi_2 %d, len %d", rx_rssi, evt->len);
+
+    /* Enviar datos a la cola */
+    // if(IS_GATEWAY)
+    // {
+    //     if (!app_rx_buffer_write(&evt->data[7], 693)) {
+    //         LOG_WRN("app_rx_msgq full, dropping app RX packet");
+    //     }
+    // }
+    // else
+    // {
+    //     rx_fifo_put(evt->data, evt->len, transmitter_srdid, networkID);
+    // }
+    LOG_WRN("transmitter_srdid: %x", transmitter_srdid);
+    LOG_WRN("networkID: %x", networkID);
+    rx_fifo_put(evt->data, evt->len, transmitter_srdid, networkID);
+    
+
+    // if(!setContinuousRx)
+    // {
+    //     LOG_INF("Single shot RX complete, cancelling RX handle %d", rxHandle);
+    //     nrf_modem_dect_phy_cancel(rxHandle);
+    // }    
+      
 }
 
+/* Physical Data Channel CRC error notification. */
+static void on_pdc_crc_err(const struct nrf_modem_dect_phy_pdc_crc_failure_event *evt)
+{
+    LOG_INF("PDC CRC ERROR, rssi_2, %d, crc error count,  %d, continuing", calcRSSI(evt->rssi_2, 0), ++crc_errors);
+	LOG_DBG("pdc_crc_err cb time %"PRIu64"", modem_time);
+}
 
+/* RSSI measurement result notification. */
+static void on_rssi(const struct nrf_modem_dect_phy_rssi_event *evt)
+{
+	LOG_DBG("rssi cb time %"PRIu64" carrier %d", modem_time, evt->carrier);
+}
 
-/* config struct exportado a la API */
-struct nrf_modem_dect_phy_callbacks dect_cb_config = {
-    .init = init,
-    .deinit = deinit,
-    .op_complete = op_complete,
-    .rx_stop = rx_stop,
-    .pcc = pcc,
-    .pcc_crc_err = pcc_crc_err,
-    .pdc = pdc,
-    .pdc_crc_err = pdc_crc_err,
-    .rssi = rssi,
-    .link_config = link_config,
-    .time_get = time_get,
-    .capability_get = capability_get,
-    #if defined(BOARD_USED) && BOARD_USED == 9151
-        .stf_cover_seq_control = stf_cover_seq_control, 
-    #endif
-};
+static void on_stf_cover_seq_control(const struct nrf_modem_dect_phy_stf_control_event *evt)
+{
+	LOG_WRN("Unexpectedly in %s\n", (__func__));
+}
 
-//new parameters for HARQ operation, not used in this sample
-const struct nrf_modem_dect_phy_init_params init_params ={
-	.harq_rx_expiry_time_us=5000000,
-	.harq_rx_process_count=1
-};
+static void dect_phy_event_handler(const struct nrf_modem_dect_phy_event *evt)
+{
+	modem_time = evt->time;
 
+	switch (evt->id) {
+	case NRF_MODEM_DECT_PHY_EVT_INIT:
+		on_init(&evt->init);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_DEINIT:
+		on_deinit(&evt->deinit);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_ACTIVATE:
+		on_activate(&evt->activate);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_DEACTIVATE:
+		on_deactivate(&evt->deactivate);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_CONFIGURE:
+		on_configure(&evt->configure);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_RADIO_CONFIG:
+		on_radio_config(&evt->radio_config);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_COMPLETED:
+		on_op_complete(&evt->op_complete);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_CANCELED:
+		on_cancel(&evt->cancel);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_RSSI:
+		on_rssi(&evt->rssi);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_PCC:
+		on_pcc(&evt->pcc);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_PCC_ERROR:
+		on_pcc_crc_err(&evt->pcc_crc_err);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_PDC:
+		on_pdc(&evt->pdc);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_PDC_ERROR:
+		on_pdc_crc_err(&evt->pdc_crc_err);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_TIME:
+		on_time_get(&evt->time_get);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_CAPABILITY:
+		on_capability_get(&evt->capability_get);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_BANDS:
+		on_bands_get(&evt->band_get);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_LATENCY:
+		on_latency_info_get(&evt->latency_get);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_LINK_CONFIG:
+		on_link_config(&evt->link_config);
+		break;
+	case NRF_MODEM_DECT_PHY_EVT_STF_CONFIG:
+		on_stf_cover_seq_control(&evt->stf_cover_seq_control);
+		break;
+	}
+}
 
 
 void modem_init(void)
 {
-    /* Inicializa nrf_modem_lib si hace falta */
-    int err = nrf_modem_lib_init();
+    int err;
+
+    // printk("modem_init: before nrf_modem_lib_init()\n");
+    err = nrf_modem_lib_init();
+    // printk("modem_init: after nrf_modem_lib_init(), err=%d\n", err);
+
+    // err = nrf_modem_lib_init();
     if (err != 0) {
         LOG_ERR("nrf_modem_lib_init fail %d", err);
-    }
-
-    err=nrf_modem_dect_phy_callback_set(&dect_cb_config);
-    if(err!=0) {
-        LOG_INF("ERROR settings callbacks %d\n",err);
-    }
-    err=nrf_modem_dect_phy_init(&init_params);
-    if(err!=0) {
-        LOG_INF("ERROR initializing modem PHY %d\n",err);
         return;
     }
 
-  config_default_rx_params();
+    /* register local event handler */
+    err = nrf_modem_dect_phy_event_handler_set(dect_phy_event_handler);
+    if (err != 0) {
+        LOG_ERR("nrf_modem_dect_phy_event_handler_set failed %d", err);
+        return;
+    }
 
-    
-  LOG_INF("Carrier: %d\n", CARRIER);
-  LOG_INF("Environment checked and working\n");
-  LOG_INF("----------------------------------------------------------\n");
-}
+    /* init PHY */
+    err = nrf_modem_dect_phy_init();
+    if (err != 0) {
+        LOG_ERR("nrf_modem_dect_phy_init failed %d", err);
+        return;
+    }
 
-void modem_rx(uint32_t rxMode, int time_s)
-{
+    /* wait for on_init callback to give the semaphore */
+    k_sem_take(&modem, K_FOREVER);
+
+    /* You may want to check a fatal flag set by the callback */
+    if (modem_fatal_error_flag) {
+        LOG_ERR("modem reported fatal error during init");
+        return;
+    }
+
+    const struct nrf_modem_dect_phy_config_params modem_config = {
+        .band_group_index = ((CARRIER >= 525 && CARRIER <= 551)) ? 1 : 0,
+        .harq_rx_process_count = 4,
+        .harq_rx_expiry_time_us = 5000000
+    };
+
+    err = nrf_modem_dect_phy_configure(&modem_config);
+    if (err != 0) {
+        LOG_ERR("nrf_modem_dect_phy_configure failed %d", err);
+        return;
+    }
 
     k_sem_take(&modem, K_FOREVER);
-    int ret = nrf_modem_dect_phy_rx(&rxOpsParams);
-    if (ret != 0) {
-        LOG_ERR("RX FAIL %d", ret);
+    if (modem_fatal_error_flag) {
+        LOG_ERR("modem reported fatal error during configure");
+        return;
     }
+
+    const enum nrf_modem_dect_phy_radio_mode modem_mode = NRF_MODEM_DECT_PHY_RADIO_MODE_LOW_LATENCY;
+    err = nrf_modem_dect_phy_activate(modem_mode);
+    if (err != 0) {
+        LOG_ERR("nrf_modem_dect_phy_activate failed %d", err);
+        return;
+    }
+
+    k_sem_take(&modem, K_FOREVER);
+    if (modem_fatal_error_flag) {
+        LOG_ERR("modem reported fatal error during activate");
+        return;
+    }
+
+    config_default_rx_params();
+
+    modem_op_complete();
+
+    LOG_INF("Carrier: %d\n", CARRIER);
+    LOG_INF("Environment checked and working\n");
+    LOG_INF("----------------------------------------------------------\n");
 }
 
-void modem_tx(uint8_t* data, size_t datasize, uint8_t* phyheader, size_t phyheadersize)
+
+void modem_rx(uint32_t rxMode, int time_ms)
 {
+    modem_op_start();
+
+    if(rxMode == NRF_MODEM_DECT_PHY_RX_MODE_CONTINUOUS)
+    {
+        setContinuousRx = true;
+        // LOG_INF("Starting CONTINUOUS RX for %d ms", time_ms);
+    }
+    else
+    {
+        setContinuousRx = false;
+        // LOG_INF("Starting SINGLE SHOT RX for %d ms", time_ms);
+    }
+    
+    rxOpsParams.duration = time_ms * NRF_MODEM_DECT_MODEM_TIME_TICK_RATE_KHZ;
+    rxOpsParams.mode = rxMode;
+
+    LOG_INF(",");
+
+    int ret = nrf_modem_dect_phy_rx(&rxOpsParams);
+    if (ret != 0) {
+        LOG_INF("RX FAIL %d", ret);
+    }
+    
+}
+
+void modem_tx(uint8_t* data, size_t datasize, uint8_t* phyheader, size_t phyheadersize, int scheduled)
+{
+    modem_op_start();
+
   memcpy(_txData, data, datasize);
+
+//   if(phyheadersize==5) LOG_INF("TX with PHY header type 1");
+//   if(phyheadersize==10) LOG_INF("TX with PHY header type 2");
 
   if(phyheadersize==5)memcpy(&phyHeader.type_1, phyheader, phyheadersize);
   else memcpy(&phyHeader.type_2, phyheader, phyheadersize);
 
+//   LOG_INF("TX scheduled in %d ms", scheduled);
+
+//   LOG_INF("Time: %d", modem_time);
   struct nrf_modem_dect_phy_tx_params txOpsParams;
   //immediate operation
-  txOpsParams.start_time = 0; 
+  if(scheduled==0) txOpsParams.start_time = 0;
+  else  txOpsParams.start_time = (scheduled * NRF_MODEM_DECT_MODEM_TIME_TICK_RATE_KHZ) + modem_time;
+    // txOpsParams.start_time = scheduled;
   txOpsParams.handle = txHandle;
   //neteork id value, used in rx filtering
   txOpsParams.network_id = 0x0a;
@@ -266,33 +468,32 @@ void modem_tx(uint8_t* data, size_t datasize, uint8_t* phyheader, size_t phyhead
   //  EU carrier, see ETSI TS 103 636-2 5.4.2 for the calculation 
   txOpsParams.carrier = CARRIER;
   //NOTE !!! no LBT done
-  txOpsParams.lbt_period = 0;
+  txOpsParams.lbt_period = 0 * 10 * NRF_MODEM_DECT_MODEM_TIME_TICK_RATE_KHZ;
   txOpsParams.phy_header = &phyHeader;
   txOpsParams.data = _txData;
   txOpsParams.data_size = datasize;
 
-  k_sem_take(&modem, K_FOREVER);
   int err=nrf_modem_dect_phy_tx(&txOpsParams);
-  if(err!=0) LOG_ERR("TX FAIL %d", err);
+  if(err!=0) LOG_WRN("TX FAIL %d", err);
+  k_sem_take(&modem, K_FOREVER);
+  
   if(txHandle==30000)txHandle=1;
   else txHandle++;
-  LOG_INF(".\n");
+  LOG_INF(".");
 
 
 }
 
 void request_rssi_measurement(void)
 {
-    int err = nrf_modem_dect_phy_rssi(&rssiParams);
-    if (err != 0) {
-        LOG_INF("RSSI measurement request failed with error %d\n", err);
-    } else {
-        // printk("RSSI measurement request succeeded.\n");
-    }
+    /* ejemplo: rellena rxOpsParams para medición de RSSI y llama a modem_rx o API específica */
+    LOG_DBG("request_rssi_measurement: pidiendo medida RSSI");
+    /* en tu main usabas struct nrf_modem_dect_phy_rssi_params y request_rssi_measurement(rssiParams) */
 }
 
 void config_default_rx_params(void)
 {
+    // Limpiar estructura antes de configurar
     memset(&rxOpsParams, 0, sizeof(rxOpsParams));
 
     rxOpsParams.start_time = 0; //start immediately
@@ -305,7 +506,7 @@ void config_default_rx_params(void)
     // modem clock ticks NRF_MODEM_DECT_MODEM_TIME_TICK_RATE_KHZ --> 69120*1000* TIME_S
     rxOpsParams.duration = 2*69120*1000; 
     //filter on the short network id, last 8 bits of the network identifier in dect nr
-    rxOpsParams.filter.short_network_id = (uint8_t)(0x0a);
+    rxOpsParams.filter.short_network_id = (uint8_t)(0x0a);  // Valor por defecto
     rxOpsParams.filter.is_short_network_id_used = 0;
     //listen for everything (broadcast mode used)
     rxOpsParams.filter.receiver_identity = 0;
@@ -348,4 +549,45 @@ void enable_rx_filter(uint8_t short_network_id, uint16_t receiver_identity)
 void set_TXParams(struct TXParams new_tp)
 {
     tp = new_tp;
+}
+
+void set_RXParams(struct nrf_modem_dect_phy_rx_params new_rp)
+{
+    rxOpsParams = new_rp;
+}
+
+int get_txHandle(void)
+{
+    return txHandle;
+}
+
+int get_rxHandle(void)
+{
+    return rxHandle;
+}
+
+void modem_op_start(void)
+{
+    modem_free = false;
+    /* Notify tx_consumer that modem is busy */
+    modem_operator_set_modem_free(false);
+    // LOG_INF("Modem ocupado");
+}
+
+void modem_op_complete(void)
+{
+    modem_free = true;
+    /* Notify tx_consumer that modem is free */
+    modem_operator_set_modem_free(true);
+    // LOG_INF("Modem liberado");
+}
+
+bool is_modem_free(void)
+{
+    return modem_free;
+}
+
+uint16_t get_transmitter_srdid(void)
+{
+    return transmitter_srdid;
 }

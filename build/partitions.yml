@@ -5,7 +5,7 @@ app:
   size: 0xf0000
 nrf_modem_lib_ctrl:
   address: 0x20008000
-  end_address: 0x200084e8
+  end_address: 0x20008728
   inside:
   - sram_nonsecure
   placement:
@@ -13,10 +13,10 @@ nrf_modem_lib_ctrl:
     - tfm_sram
     - start
   region: sram_primary
-  size: 0x4e8
+  size: 0x728
 nrf_modem_lib_rx:
-  address: 0x2000a568
-  end_address: 0x2000c568
+  address: 0x2000a7a8
+  end_address: 0x2000c7a8
   inside:
   - sram_nonsecure
   placement:
@@ -26,17 +26,17 @@ nrf_modem_lib_rx:
   size: 0x2000
 nrf_modem_lib_sram:
   address: 0x20008000
-  end_address: 0x2000c568
+  end_address: 0x2000c7a8
   orig_span: &id001
   - nrf_modem_lib_ctrl
   - nrf_modem_lib_tx
   - nrf_modem_lib_rx
   region: sram_primary
-  size: 0x4568
+  size: 0x47a8
   span: *id001
 nrf_modem_lib_tx:
-  address: 0x200084e8
-  end_address: 0x2000a568
+  address: 0x20008728
+  end_address: 0x2000a7a8
   inside:
   - sram_nonsecure
   placement:
@@ -61,10 +61,10 @@ sram_nonsecure:
   size: 0x38000
   span: *id002
 sram_primary:
-  address: 0x2000c568
+  address: 0x2000c7a8
   end_address: 0x20040000
   region: sram_primary
-  size: 0x33a98
+  size: 0x33858
 sram_secure:
   address: 0x20000000
   end_address: 0x20008000

@@ -8,9 +8,12 @@ enum timer_event_type {
     ASSOC_MSG_TIMER,
     BROADCAST_TIMER,
     RX_TIMER,
+    SFN_TIMER,
     ISOLATION_TIMER,
     FT_DATA_TIMER,
-    FT_ASSOC_TIMER
+    FT_ASSOC_TIMER,
+    ASSOC_WIN,
+    DATA_WIN
 
 };
 

@@ -13,10 +13,13 @@ K_MSGQ_DEFINE(timer_msgq, sizeof(struct timer_event), MAX_TIMER_EVENTS, 4);
 //// Message queue for deferred timer events
 K_MSGQ_DEFINE(timer_pending_msgq, sizeof(struct timer_event), MAX_TIMER_EVENTS, 4);
 
-static struct k_timer beacon_timer, assoc_msg_timer, broadcast_timer, rx_timer, ft_timer, isolation_timer, ft_data_timer, ft_assoc_timer;
+static struct k_timer beacon_timer, assoc_msg_timer, broadcast_timer, rx_timer, sfn_timer, ft_timer, isolation_timer, 
+ft_data_timer, ft_assoc_timer, assoc_win_timer, data_win_timer;
 
 //// Store configured priority per timer type
-static uint8_t timer_priority_map[FT_DATA_TIMER + 1];
+// Allocate enough entries to include FT_ASSOC_TIMER (and avoid overflow
+// when saving priorities for types up to FT_ASSOC_TIMER).
+static uint8_t timer_priority_map[DATA_WIN + 1];
 
 //// Flag set by application while processing a packet
 static atomic_t processing_flag = ATOMIC_INIT(0);
@@ -39,10 +42,18 @@ static void timer_expiry_handler(struct k_timer *timer_id)
         evt.type = RX_TIMER;
     } else if (timer_id == &ft_assoc_timer) {
         evt.type = FT_ASSOC_TIMER;
+    } else if (timer_id == &sfn_timer) {
+        evt.type = SFN_TIMER;
+    } else if (timer_id == &ft_timer) {
+        evt.type = SFN_TIMER;
     } else if (timer_id == &isolation_timer) {
         evt.type = ISOLATION_TIMER;
     } else if (timer_id == &ft_data_timer) {
         evt.type = FT_DATA_TIMER;
+    } else if (timer_id == &assoc_win_timer) {
+            evt.type = ASSOC_WIN;
+    } else if (timer_id == &data_win_timer) {
+            evt.type = DATA_WIN;
     } else {
         //// Unknown timer, ignore
         return;
@@ -70,10 +81,13 @@ void timers_init(void)
     k_timer_init(&assoc_msg_timer, timer_expiry_handler, NULL);
     k_timer_init(&broadcast_timer, timer_expiry_handler, NULL);
     k_timer_init(&rx_timer, timer_expiry_handler, NULL);
+    k_timer_init(&sfn_timer, timer_expiry_handler, NULL);
     k_timer_init(&ft_timer, timer_expiry_handler, NULL);
     k_timer_init(&isolation_timer, timer_expiry_handler, NULL);
     k_timer_init(&ft_data_timer, timer_expiry_handler, NULL);
     k_timer_init(&ft_assoc_timer, timer_expiry_handler, NULL);
+    k_timer_init(&assoc_win_timer, timer_expiry_handler, NULL);
+    k_timer_init(&data_win_timer, timer_expiry_handler, NULL);
 }
 
 int timers_start(enum timer_event_type type, k_timeout_t timeout, uint8_t priority)
@@ -84,9 +98,12 @@ int timers_start(enum timer_event_type type, k_timeout_t timeout, uint8_t priori
     case ASSOC_MSG_TIMER: t = &assoc_msg_timer; break;
     case BROADCAST_TIMER: t = &broadcast_timer; break;
     case RX_TIMER: t = &rx_timer; break;
+    case SFN_TIMER: t = &sfn_timer; break;
     case ISOLATION_TIMER: t = &isolation_timer; break;
     case FT_DATA_TIMER: t = &ft_data_timer; break;
     case FT_ASSOC_TIMER: t = &ft_assoc_timer; break;
+    case ASSOC_WIN: t = &assoc_win_timer; break;
+    case DATA_WIN: t = &data_win_timer; break;
     }
 
     if (!t) return -EINVAL;
@@ -94,6 +111,11 @@ int timers_start(enum timer_event_type type, k_timeout_t timeout, uint8_t priori
     if (type <= FT_ASSOC_TIMER) timer_priority_map[type] = priority;
 
     k_timer_start(t, timeout, K_NO_WAIT);
+    /* Avoid passing k_timeout_t (an aggregate) to the log macros which
+     * can't package aggregate types. Log the timer type and priority
+     * instead of the raw k_timeout_t value. If you want the numeric
+     * milliseconds, convert the timeout to ms explicitly before logging.
+     */
     LOG_INF("Started timer: %d (priority=%d)", type, priority);
     return 0;
 }
@@ -106,9 +128,12 @@ int timers_stop(enum timer_event_type type)
     case ASSOC_MSG_TIMER: t = &assoc_msg_timer; break;
     case BROADCAST_TIMER: t = &broadcast_timer; break;
     case RX_TIMER: t = &rx_timer; break;
+    case SFN_TIMER: t = &sfn_timer; break;
     case ISOLATION_TIMER: t = &isolation_timer; break;
     case FT_DATA_TIMER: t = &ft_data_timer; break;
     case FT_ASSOC_TIMER: t = &ft_assoc_timer; break;
+    case ASSOC_WIN: t = &assoc_win_timer; break;
+    case DATA_WIN: t = &data_win_timer; break;
     }
 
     if (!t) return -EINVAL;

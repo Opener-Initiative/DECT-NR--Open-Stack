@@ -1,20 +1,29 @@
 #ifndef DEVICE_CONFIG_H
 #define DEVICE_CONFIG_H
 
-/* ========== DEVICE CONFIGURATION ========== */
+/* ========== CONFIGURACIÓN DEL DISPOSITIVO ========== */
 
-#define USING_GATEWAYS      false
-#define IS_GATEWAY          true
-#define IS_COORDINATOR      false
+/* Rol del dispositivo */
+#define USING_GATEWAYS      true
+#define IS_GATEWAY          false
+// #define IS_COORDINATOR      false
 
+/* Identificadores del dispositivo */
 #define RD_ID               NULL
 #define NETWORK_ID          NULL
 
-#define CARRIER             1690
-#define MAX_NETWORKS        3 
+#define CARRIER             1664
+#define MAX_NETWORKS        3
 #define RING_LEVEL          0
-#define DATA_LEN            700 // to modify for a complex MCS function
-#define BEACON_PERIOD       5000 // in ms
+#define DATA_LEN            700     // to modify for a complex MCS function
+#define BEACON_PERIOD       2000    // in ms
+
+#define FIXED_SFN               0      // -1 to disable, else fixed SFN value
+#define BROADCAST_IND_PERIOD    3000    // in ms
+#define SWITCH_DELAY            90     // in ms
 
 
-#endif 
+//// DEBUG CONFIG
+#define ENABLE_ASSOCIATION  true
+
+#endif

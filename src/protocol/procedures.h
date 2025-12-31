@@ -74,13 +74,72 @@ struct DataMessage
     uint8_t data[700-7];    //Data aplicacion to transmit
     uint8_t payload[700]; 
 
-    plcf_20_t plcf_20;      //Physical Layer Common Field - 10 bytes  
+    plcf_10_t plcf_10;      //Physical Layer Common Field - 10 bytes  
 
     mlcf_a_t mlcf_a;        //MAC Header Type - 1 byte
     mlcf_b_1t mlcf_b_1;     //MAC DATA PDU Header - 2 bytes
     mlcf_c_4t mlcf_c_4;     //MAC MUX Header - Type e - 4 bytes
 
     //Payload               //MAC Data Message - XXXXX bytes
+};
+
+struct BroIndIE
+{   
+    //MAC Broadcast Indication IE - 9 bytes
+
+    uint8_t phyheader[5];
+    uint8_t mac_header[8];
+    uint8_t payload[700];
+
+    plcf_10_t plcf_10;
+
+    mlcf_a_t mlcf_a;        // MAC Header Type - 1 byte
+    mlcf_b_1t mlcf_b_1;     // DATA MAC PDU Header - 2 bytes
+    mlcf_c_2t mlcf_c_2;      // MAC MUX Header - Type c - 1 bytes
+    mlie_7_t mlie_7;        // MAC Broadcast Indication IE - 4 bytes
+
+};
+
+struct KAm
+{
+    uint8_t phyheader[10];
+    uint8_t mac_header[4];  // MAC Header Data
+    uint8_t message[50];    // Data aplicacion to transmit
+    uint8_t payload[700];   // All data to  transmit
+
+    plcf_20_t plcf_20;      // Physical Layer Common Field - 10 bytes
+
+    mlcf_a_t mlcf_a;        // MAC Header Type - 1 byte
+    mlcf_b_1t mlcf_b_1;     // DATA MAC PDU Header - 2 bytes
+    mlcf_c_1t mlcf_c_1;     // MAC MUX Header - Type 1 - 1 byte
+
+};
+
+struct MetricMessage
+{
+    uint8_t phyheader[5];
+    uint8_t mac_header[3];
+    uint8_t message[697];
+    uint8_t payload[700]; //Size available left by the header. Max data length
+
+    plcf_10_t plcf_10;      //Physical Layer Common Field - 5 bytes
+
+    mlcf_a_t mlcf_a;        //MAC Header Type - 1 byte
+    mlcf_b_1t mlcf_b_1;     //DATA MAC PDU Header - 2 bytes
+
+};
+
+struct StatusDevNet
+{
+    uint8_t IsFT        :1;
+    uint8_t IsGW        :1;
+    uint8_t DataLength  :6;
+    uint32_t NetworkID;
+    int n_devices;
+    uint32_t LRDID[10];
+
+    uint8_t sdn[690];
+
 };
 
 
@@ -101,7 +160,6 @@ struct TXParams
     bool isFT;
     bool isGW;
     int Ring_Level;
-    int assignated_SFN;
 
     
 };
@@ -123,6 +181,11 @@ int txAssocBeacon(struct AssocBeaconMessage *abm, struct TXParams *tp);
 int txAssocReq(struct AssocReqMessage *aRm, struct TXParams *tp);
 int txAssocResp(struct AssocRespMessage *arm, struct TXParams *tp);
 int txData(struct DataMessage *dm, struct TXParams *tp);
+int txBroIndIE(struct BroIndIE *bim, struct TXParams *tp);
+int txKAm_IE(struct KAm *kam, struct TXParams *tp);
+int txMetricReq(struct MetricMessage *mr, struct TXParams *tp);
+int getStatusDevNet(struct StatusDevNet *sdn);
+int setStatusDevNet(struct StatusDevNet *sdn);
 int nSubslots(int bytes, int MCS);
 
 

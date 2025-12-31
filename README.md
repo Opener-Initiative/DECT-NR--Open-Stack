@@ -1,17 +1,20 @@
 # C Code DECT NR+ Implementation over nRF9161
 
-This repository contains work-in-progress source code and resources for a communication system prototype implementing the **DECT-2020** standard on the **Nordic nRF9161** System-in-Package (SiP).
+This repository contains work-in-progress source code and resources for a communication system prototype implementing the **DECT-2020** standard on the **Nordic nRF91X1** System-in-Package (SiP).
 
 The project models the standard using a **finite state machine (FSM)** and integrates the modem via the official **nRF Modem API** to ensure real-time, low-latency operation.
 
 ## 🧩 Context Overview
 
 - **Objective:** Develop a DECT NR+ C code implementation modeling ETSI TS 103 636 Parts 1–5.
-- **Hardware:** Nordic nRF9161 (processor + LTE modem).
+- **Hardware:** Nordic nRF91X1 (processor + modem).
 - **Software Architecture:**
    - FSM controlling system states and protocol flow.
-   - Dedicated threads for RX/TX and modem handling.
-   - Event queues, semaphores, and work queues for synchronization.
+   - I/O Module to inject and extract data from the network.
+   - Data buffers for applications to interact with DECT NR+ network.
+   - Package Core, composed of packet processor and packet generator.
+   - Package queues, TX queue and RX queue.
+   - Modem handler to coordinate
    - Packet header definitions and functions for assembling and disassembling.
    - Functions to pack and unpack DECT messages with multiple headers.
 - **Focus:** Create a solid base for a telecommunication technology capable of transmitting information in defined scenarios, implementing characteristics from ETSI TS 103 636.
@@ -33,32 +36,33 @@ The project models the standard using a **finite state machine (FSM)** and integ
 │   ├── build/                      # Sample build configuration
 │   ├── overlay/                    # Overlays for builds
 │   ├── CMakeLists.txt
-│   ├── prj.conf
-│   └── htu21d_sensor.overlay
+│   └── prj.conf
 └── Documents/
       └── ETSI_TS_103636_xx.pdf       # Reference specifications
 ```
 
 ## 🛠️ Usage
 
-Download the file attached to the release and upload it to the nRF9161DK using the nRF Connect Programmer application. Ensure that the board is pre-flashed with the DECT modem firmware for proper operation.
+For a simple approach to the preconfigured Demo, precompiled files are available in the release version. Program *GATEWAY.hex* in the FT device and *SENSOR.hex* in the PT device that will have attached the recommended sensor.
 
 ## ⚙️ Building and Running
 
 1. **Requirements**
     - Nordic SDK and toolchain (minimum v2.5.0)
     - DECT modem firmware (minimum v0.5.0-110 prealpha)
-    - (Optional) OLED Display SSD1306 0.91 inches
+    - ~~(Optional) OLED Display SSD1306 0.91 inches~~
     - (Optional) Environmental sensor HTU21D
 
 2. **Build**
     Compile with VS Code + nRF Connect extension, or use west/cmake.
 
 3. **Run**
-    - Use the physical hardware to view the real-time demonstrator with the display, or run a console using nRF Connect or any serial terminal.
-    - Observe FSM transitions and modem events in real time, and monitor data transmission over a DECT NR+ network.
+    - Use the physical hardware to view the real-time demonstrator ~~with the display~~, or run a console using nRF Connect or any serial terminal.
+    - Observe FSM transitions and modem events in real time using serial terminal, and monitor data transmission over a DECT NR+ network.
 
 ## Optional Hardware Setup
+
+### Release v0.1.0
 
 Although the demo sends dummy data by default, it is recommended to connect a real data source to test the demonstrator’s functionalities. To connect both display and sensor, use the diagram below or configure as needed:
 
@@ -80,13 +84,35 @@ Although the demo sends dummy data by default, it is recommended to connect a re
 
 With this setup, you can view association updates on the display and use real data collected by the HTU21D sensor.
 
+## Release v0.2.0
+
+Removed support for OLED Display, data received shall be displayed using a serial terminal.
+
+
+```text
++-----------------------+
+|     IoT Sensor        |
+|     HTU21D            |
++-----------------------+
+| VIN | GND | SCL | SDA |
++-----+-----+-----+-----+ 
+    |     |     |     |
+    |     |     |     |
++-----+-----+-----+-----+ 
+| VDD | GND |P0.25|P0.21|
++-----------------------+ 
+|        nRF9161        |
++-----------------------+
+```
+
+
 ## 🚀 Current Features
 
 * Basic FSM structure for DECT NR+ operation.
 * Implementation of all headers defined in the Technical Specification.
 * Association procedure with ID exchange and network creation.
-* Plain application data transmitted and received; data sent periodically every 5 seconds.
-* Example drivers for connecting peripherals to the nRF9161 SiP via I2C.
+* Plain application data transmitted and received; data sent periodically every 8 seconds.
+* Example drivers for connecting peripherals to the nRF9151 SiP via I2C.
 * Modular architecture ready for PHY/MAC/DLC layer expansion.
 
 ---

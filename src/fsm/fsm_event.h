@@ -14,6 +14,7 @@ struct fsm_event {
         struct {
             uint8_t data[512];
             size_t len;
+            uint16_t transmitter_srdid;
         } rx;
         struct timer_event timer;
     };
