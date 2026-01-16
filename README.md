@@ -4,6 +4,10 @@ This repository contains work-in-progress source code and resources for a commun
 
 The project models the standard using a **finite state machine (FSM)** and integrates the modem via the official **nRF Modem API** to ensure real-time, low-latency operation.
 
+The code was developed by the Universidad Politécnica de Cartagena (UPCT) in cooperation with the Ostfalia University of Applied Sciences as part of the Franco-German joint research project "Media and Event production via Resilient Communication on IoT Infrastructure" (MERCI, grant number 01MJ22016D).
+
+Questions about the code should be directed to [@Ivanfroste24](https://github.com/Ivanfroste24), [@lala9](https://github.com/lala9), and [@antoniojaviergarciasanchez](https://github.com/antoniojaviergarciasanchez).
+
 ## 🧩 Context Overview
 
 - **Objective:** Develop a DECT NR+ C code implementation modeling ETSI TS 103 636 Parts 1–5.
