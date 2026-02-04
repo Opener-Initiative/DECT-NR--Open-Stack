@@ -11,8 +11,8 @@ LOG_MODULE_REGISTER(uart_h);
 
 
 
-#define ESP32_UART_NODE DT_ALIAS(esp32_uart)        /* definido en tu overlay */
-#define PC_UART_NODE    DT_CHOSEN(zephyr_shell_uart) /* consola/logs */
+#define ESP32_UART_NODE DT_ALIAS(esp32_uart)        /* defined in your overlay */
+#define PC_UART_NODE    DT_CHOSEN(zephyr_shell_uart) /* console/logs */
 #define MSG_SIZE (693*2)
 #define ESP32_BUF_SIZE 700
 #define UART_DEV "UART_3"
@@ -27,10 +27,10 @@ static struct k_work esp32_work;
 static struct k_work pc_work;
 
 static uint8_t esp32_reception_buffer[700];
-static size_t esp32_head = 0;   // posición de escritura
-static size_t esp32_count = 0;  // nº de bytes válidos en el buffer
+static size_t esp32_head = 0;   // write position
+static size_t esp32_count = 0;  // number of valid bytes in the buffer
 
-/// @brief Almacena un byte en el buffer circular del ESP32
+/// @brief Store a byte in the ESP32 circular buffer
 static inline void esp32_circbuf_put(uint8_t byte)
 {
     esp32_reception_buffer[esp32_head] = byte;
@@ -40,15 +40,15 @@ static inline void esp32_circbuf_put(uint8_t byte)
     }
 }
 
-/// @brief Recupera los últimos `max_len` bytes recibidos del ESP32
-/// @param out_buf destino
-/// @param max_len tamaño máximo de destino
-/// @return número de bytes copiados
+/// @brief Retrieve the last `max_len` bytes received from the ESP32
+/// @param out_buf destination buffer
+/// @param max_len maximum destination size
+/// @return number of bytes copied
 size_t uart_get_last_data(uint8_t *out_buf, size_t max_len)
 {
     size_t to_copy = (esp32_count < max_len) ? esp32_count : max_len;
 
-    // posición inicial de lectura (los últimos to_copy bytes)
+    // start read position (last to_copy bytes)
     size_t start = (esp32_head + ESP32_BUF_SIZE - to_copy) % ESP32_BUF_SIZE;
 
     for (size_t i = 0; i < to_copy; i++) {
@@ -70,7 +70,7 @@ static void esp32_work_handler(struct k_work *work)
         if (pos < sizeof(buffer)) {
             buffer[pos++] = byte;
             if (byte == '\n') {
-                /* Pasar paquete a la app */
+                /* Forward packet to the app */
                 app_on_uart_data(buffer, pos);
                 pos = 0;
             }
@@ -92,9 +92,9 @@ static void pc_work_handler(struct k_work *work)
         if (pos < sizeof(buffer)) {
             buffer[pos++] = byte;
             if (byte == '\n') {
-                /* Aquí decides qué hacer con datos que vengan del PC */
-                LOG_INF("PC UART: recibido paquete len=%d", pos);
-                // Ejemplo: reenviar a ESP32
+                /* Decide what to do with data coming from the PC here */
+                LOG_INF("PC UART: received packet len=%d", pos);
+                // Example: forward to ESP32
                 // uart_fifo_fill(esp32_dev, buffer, pos);
                 pos = 0;
             }
@@ -115,7 +115,7 @@ static void esp32_cb(const struct device *dev, void *user_data)
     while (uart_irq_rx_ready(dev)) {
         if (uart_fifo_read(dev, &byte, 1) > 0) {
             k_msgq_put(&esp32_msgq, &byte, K_NO_WAIT);
-            esp32_circbuf_put(byte);   // <-- Guardar siempre en el buffer circular
+            esp32_circbuf_put(byte);   // <-- Always store in the circular buffer
         }
     }
 
@@ -153,7 +153,7 @@ void uart_init(void)
     } else {
         uart_irq_callback_user_data_set(esp32_dev, esp32_cb, NULL);
         uart_irq_rx_enable(esp32_dev);
-        LOG_INF("ESP32 UART inicializado");
+        LOG_INF("ESP32 UART initialized");
     }
 
     /* PC UART */
@@ -164,7 +164,7 @@ void uart_init(void)
     } else {
         uart_irq_callback_user_data_set(pc_uart_dev, pc_cb, NULL);
         uart_irq_rx_enable(pc_uart_dev);
-        LOG_INF("PC UART inicializado");
+        LOG_INF("PC UART initialized");
     }
 }
 

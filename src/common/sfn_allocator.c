@@ -4,10 +4,10 @@
 #include <string.h>
 #include <assert.h>
 
-/* Instancia global del pool SFN */
+/* Global SFN pool instance */
 static struct sfn_pool *global_sfn_pool = NULL;
 
-/* ---------------- implementación de una min-heap ---------------- */
+/* ---------------- min-heap implementation ---------------- */
 static void heap_swap(int *a, int *b) { int t=*a; *a=*b; *b=t; }
 
 static void heap_up(int *h, int i)
@@ -29,12 +29,12 @@ static void heap_down(int *h, int n, int i)
     }
 }
 
-/* ---------------- estructura de datos ------------------------ */
+/* ---------------- data structure ------------------------ */
 struct sfn_pool {
-    int  next;          /* próximo SFN nuevo */
-    int *free_heap;     /* min-heap de SFN liberados          */
-    int  free_cap;      /* capacidad del array                */
-    int  free_len;      /* nº de elementos válidos            */
+    int  next;          /* next SFN to allocate */
+    int *free_heap;     /* min-heap of freed SFNs */
+    int  free_cap;      /* array capacity */
+    int  free_len;      /* number of valid elements */
 };
 
 #define INIT_CAP 16
@@ -94,11 +94,11 @@ int sfn_alloc(struct sfn_pool *p)
 
 void sfn_free(struct sfn_pool *p, int idx)
 {
-    if (idx < 0 || idx >= p->next)       /* fuera de rango: ignora */
+    if (idx < 0 || idx >= p->next)       /* out of range: ignore */
         return;
 
-    /* Evita duplicados: si es el mayor reciente todavía "sin asignar",
-       basta con retroceder next; si no, lo metemos en la heap.       */
+    /* Avoid duplicates: if it's the most recently allocated (still unassigned),
+       simply decrement next; otherwise push it into the heap.       */
     if (idx == p->next - 1) {
         p->next--;
     } else {
@@ -108,18 +108,18 @@ void sfn_free(struct sfn_pool *p, int idx)
 
 /* ---------------- API Global ------------------------ */
 
-/* Inicializa el pool global SFN */
+/* Initialize the global SFN pool */
 int sfn_pool_init(void)
 {
     if (global_sfn_pool) {
-        return 0; // Ya inicializado
+        return 0; // Already initialized
     }
     
     global_sfn_pool = sfn_create();
     return (global_sfn_pool != NULL) ? 0 : -1;
 }
 
-/* Destruye el pool global SFN */
+/* Deinitialize the global SFN pool */
 void sfn_pool_deinit(void)
 {
     if (global_sfn_pool) {
@@ -128,16 +128,16 @@ void sfn_pool_deinit(void)
     }
 }
 
-/* Aloca un SFN del pool global */
+/* Allocate an SFN from the global pool */
 int sfn_alloc_global(void)
 {
     if (!global_sfn_pool) {
-        return -1; // Pool no inicializado
+        return -1; // Pool not initialized
     }
     return sfn_alloc(global_sfn_pool);
 }
 
-/* Libera un SFN en el pool global */
+/* Free an SFN in the global pool */
 void sfn_free_global(int idx)
 {
     if (global_sfn_pool) {

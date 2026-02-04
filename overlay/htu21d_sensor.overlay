@@ -2,7 +2,7 @@
     status = "okay";
 
     htu21d: htu21d@40 {
-        compatible = "meas,htu21d";   // No se usará, pero es decorativo
+        compatible = "meas,htu21d";   // Not used, purely decorative
         reg = <0x40>;
         label = "HTU21D_RAW";
     };

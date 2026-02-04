@@ -42,10 +42,10 @@ void process_rx_packet(const uint8_t *_rxData, size_t len, uint16_t transmitter_
         memcpy(&mac_header.mlcf_a, &_rxData[0], 1);
         get_mlcf_a_rev(&mac_header);
         bytes_processed += 1;
-        // LOG_INF("Paquete recibido (len=%d)", len);
+        // LOG_INF("Packet received (len=%d)", len);
 
-        // printk("Paquete recibido (hex): ");
-        // for (size_t i = 0; i < len && i < 32; i++) {  // Limitar a 32 bytes para evitar overflow
+        // printk("Packet received (hex): ");
+        // for (size_t i = 0; i < len && i < 32; i++) {  // Limit to 32 bytes to avoid overflow
         //     printk("%02X ", _rxData[i]);
         // }
         // printk("\n");
@@ -312,13 +312,13 @@ void packet_processor_thread(void *a, void *b, void *c)
 
         // LOG_INF("Waiting for RX packet...");
 
-        /* Espera un paquete del módem */
+        /* Wait for a packet from the modem */
         struct rx_packet *pkt = rx_fifo_get(K_FOREVER);
 
-        /* 1. Procesar a nivel de protocolo */
+        /* 1. Process at protocol level */
         process_rx_packet(pkt->data, pkt->len, pkt->transmitter_srdid, pkt->networkID);
 
-        /* 2. Liberar memoria */
+        /* 2. Free memory */
         rx_fifo_free(pkt);
     }
 }

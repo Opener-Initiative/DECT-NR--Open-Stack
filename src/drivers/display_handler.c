@@ -70,11 +70,11 @@ int display_init(void)
     #if DT_HAS_CHOSEN(zephyr_display)
     display_dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_display));
     if (!display_dev) {
-        LOG_WRN("No se encontró display en el DT - modo sin display");
+        LOG_WRN("No display found in Device Tree - running without display");
         return -ENODEV;
     }
     if (!device_is_ready(display_dev)) {
-        LOG_WRN("El display no está listo - modo sin display");
+        LOG_WRN("Display not ready - running without display");
         return -EIO;
     }
     lv_obj_clean(lv_scr_act());
@@ -94,10 +94,10 @@ int display_init(void)
     lv_label_set_text(label_lower, "");
 
     display_blanking_off(display_dev);
-    lv_task_handler(); // Procesar y mostrar el contenido
-    LOG_INF("Display inicializado correctamente");
+    lv_task_handler(); // Process and render the content
+    LOG_INF("Display initialized successfully");
     #else
-    LOG_INF("Sistema configurado sin display");
+    LOG_INF("System configured without display");
     #endif
     return 0;
 }

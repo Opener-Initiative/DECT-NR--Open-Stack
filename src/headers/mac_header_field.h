@@ -110,9 +110,9 @@ typedef struct {
 /**
  * @brief MAC Multiplexing header Type 1 (6.3.4) (Option a & b) (MAC_EXT = 11)
  *
- * @param MAC_Ext Extensión MAC (2 bits)
- * @param Length Longitud (1 bit)
- * @param IE_Type Tipo de IE (5 bits)
+ * @param MAC_Ext MAC Extension (2 bits)
+ * @param Length Length (1 bit)
+ * @param IE_Type IE Type (5 bits)
  * 
  * @param mlcf_c_1 (1 Byte)
  */

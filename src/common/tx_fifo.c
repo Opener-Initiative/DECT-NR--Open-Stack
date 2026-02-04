@@ -10,33 +10,33 @@ LOG_MODULE_REGISTER(tx_fifo);
 /// @brief Global FIFO queue for transmitted packets
 K_FIFO_DEFINE(tx_fifo);
 
-/* Pool estático de paquetes para evitar malloc dinámico que fragmenta el heap */
+/* Static packet pool to avoid dynamic malloc which fragments the heap */
 #ifndef TX_PACKET_POOL_SIZE
 #define TX_PACKET_POOL_SIZE 32
 #endif
 
 static struct tx_packet packet_pool[TX_PACKET_POOL_SIZE];
 static atomic_t packet_available[TX_PACKET_POOL_SIZE];  // 0=busy, 1=available
-static K_FIFO_DEFINE(packet_fifo);  // FIFO de paquetes disponibles
+static K_FIFO_DEFINE(packet_fifo);  // FIFO of available packets
 
 static int pkg_count = 0;
 
-/* Contador atómico de elementos en la fifo (sólo para seguimiento rápido) */
+/* Atomic counter of elements in the FIFO (monitoring only) */
 static atomic_t tx_fifo_len = ATOMIC_INIT(0);
-/* Contador de paquetes descartados por saturación */
+/* Number of packets dropped due to FIFO overflow */
 static atomic_t tx_fifo_dropped = ATOMIC_INIT(0);
-/* Contador de intentos de usar pool exhausto */
+/* Number of attempts to get a packet when the pool was empty */
 static atomic_t pool_exhausted = ATOMIC_INIT(0);
-/* Límite máximo de paquetes permitidos en la FIFO antes de empezar a dropear */
+/* Maximum number of packets allowed in the FIFO before dropping starts */
 #ifndef TX_FIFO_MAX_ITEMS
 #define TX_FIFO_MAX_ITEMS 64
 #endif
 
-/* Inicializar el pool al arrancar */
+/* Initialize the pool at startup */
 void tx_fifo_pool_init(void)
 {
     for (int i = 0; i < TX_PACKET_POOL_SIZE; i++) {
-        atomic_set(&packet_available[i], 1);  // Marcar como disponible
+        atomic_set(&packet_available[i], 1);  // Mark as available
         k_fifo_put(&packet_fifo, &packet_pool[i]);
     }
     LOG_INF("tx_fifo pool initialized with %d packets", TX_PACKET_POOL_SIZE);
@@ -54,7 +54,7 @@ void tx_fifo_pool_init(void)
 //         return;
 //     }
 
-//     // Obtener paquete del pool (sin esperar, no bloqueante)
+//     // Get a packet from the pool (non-blocking)
 //     struct tx_packet *pkt = k_fifo_get(&packet_fifo, K_NO_WAIT);
 //     if (!pkt) {
 //         atomic_inc(&pool_exhausted);
@@ -81,7 +81,7 @@ struct tx_packet *tx_fifo_get(k_timeout_t timeout)
     // LOG_INF("tx_fifo_get called\n");
     struct tx_packet *pkt = k_fifo_get(&tx_fifo, timeout);
     if (pkt) {
-        /* elemento ya salió de la fifo */
+        /* element has already been removed from the FIFO */
         atomic_dec(&tx_fifo_len);
         pkg_count--;
     }
@@ -108,7 +108,7 @@ void tx_fifo_put(const void *data, uint32_t len, const void *header,
         return;
     }
 
-    // Obtener paquete del pool (sin esperar, no bloqueante)
+    // Get a packet from the pool (non-blocking)
     struct tx_packet *pkt = k_fifo_get(&packet_fifo, K_NO_WAIT);
     if (!pkt) {
         atomic_inc(&pool_exhausted);
@@ -134,11 +134,11 @@ void tx_fifo_put(const void *data, uint32_t len, const void *header,
     // LOG_WRN("tx_fifo_put: pkg_count=%d", pkg_count);
 }
 
-/* Libera la memoria del paquete después de procesarlo */
+/* Release the packet back to the pool after processing */
 void tx_fifo_free(struct tx_packet *pkt)
 {
     if (pkt) {
-        // Retornar el paquete al pool
+        // Return the packet to the pool
         k_fifo_put(&packet_fifo, pkt);
     }
 }

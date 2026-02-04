@@ -7,7 +7,7 @@
 
 void uart_init(void);
 
-/* callback que corresponde a la IRQ del dispositivo UART (se exporta para Zephyr) */
+/* Callback corresponding to the UART device IRQ (exported for Zephyr) */
 void esp_response_cb(const struct device *dev, void *user_data);
 
 #endif

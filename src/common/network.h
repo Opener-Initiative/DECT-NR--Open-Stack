@@ -5,25 +5,25 @@
 #include <stdbool.h>
 #include "../protocol/procedures.h"
 
-// // Estructura de red principal
+// // Main network structure
 // struct Network {
 //     uint32_t networkID;
 //     uint32_t network_FT;
 //     uint32_t own_LRDID;
 //     int n_devices;
 //     bool isGW;
-//     int list_LRDID[50][3]; // [LRDID, contador, SFN]
+//     int list_LRDID[50][3]; // [LRDID, counter, SFN]
 //     int SFN;
 // };
 
-// Variables globales de red
+// Network global variables
 extern struct Network networks[10];
 extern struct Network registeredNetworks[10];
 extern int network_index;
 extern int registeredNetworks_index;
 extern bool associated;
 
-// Funciones de gestión de redes
+// Network management functions
 void network_init(void);
 void deviceListUpdate(void);
 bool checkDestination(uint32_t LRDID);

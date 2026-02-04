@@ -1,14 +1,14 @@
 #ifndef DEVICE_CONFIG_H
 #define DEVICE_CONFIG_H
 
-/* ========== CONFIGURACIÓN DEL DISPOSITIVO ========== */
+/* ========== DEVICE CONFIGURATION ========== */
 
-/* Rol del dispositivo */
+/* Device role */
 #define USING_GATEWAYS      true
 #define IS_GATEWAY          false
 // #define IS_COORDINATOR      false
 
-/* Identificadores del dispositivo */
+/* Device identifiers */
 #define RD_ID               NULL
 #define NETWORK_ID          NULL
 

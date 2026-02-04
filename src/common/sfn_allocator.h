@@ -2,33 +2,33 @@
 #ifndef SFN_ALLOCATOR_H
 #define SFN_ALLOCATOR_H
 
-/* API Original - para uso directo con instancias específicas */
+/* Original API - for direct use with specific instances */
 
-/* Crea la estructura y la deja lista. Devuelve NULL si falla. */
+/* Create the structure and return it. Returns NULL on failure. */
 struct sfn_pool *sfn_create(void);
 
-/* Libera todos los recursos internos.  */
+/* Free all internal resources.  */
 void sfn_destroy(struct sfn_pool *p);
 
-/* Devuelve el SFN más pequeño NO usado.
-   Retorna -1 si se agotó la memoria.                */
+/* Return the smallest unused SFN.
+   Returns -1 on memory exhaustion.                */
 int  sfn_alloc(struct sfn_pool *p);
 
-/* Libera un SFN concreto (si estaba en uso).        */
+/* Free a specific SFN (if it was in use).        */
 void sfn_free(struct sfn_pool *p, int idx);
 
-/* API Global - para uso simplificado con pool global */
+/* Global API - for simplified use with the global pool */
 
-/* Inicializa el pool global SFN */
+/* Initialize the global SFN pool */
 int sfn_pool_init(void);
 
-/* Destruye el pool global SFN */
+/* Destroy the global SFN pool */
 void sfn_pool_deinit(void);
 
-/* Aloca un SFN del pool global */
+/* Allocate an SFN from the global pool */
 int sfn_alloc_global(void);
 
-/* Libera un SFN en el pool global */
+/* Free an SFN in the global pool */
 void sfn_free_global(int idx);
 
 #endif /* SFN_ALLOCATOR_H */

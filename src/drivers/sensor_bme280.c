@@ -9,14 +9,14 @@ int sensor_bme280_init(void)
 {
     bme280_dev = DEVICE_DT_GET_ANY(bosch_bme280);
     if (!bme280_dev) {
-        LOG_ERR("No se encontró el dispositivo BME280 en el DT");
+        LOG_ERR("No BME280 device found in Device Tree");
         return -ENODEV;
     }
     if (!device_is_ready(bme280_dev)) {
-        LOG_ERR("El dispositivo BME280 no está listo");
+        LOG_ERR("BME280 device not ready");
         return -EIO;
     }
-    LOG_INF("BME280 inicializado correctamente");
+    LOG_INF("BME280 initialized successfully");
     return 0;
 }
 
@@ -49,7 +49,7 @@ double get_bme280_temperature(void)
     if (sensor_bme280_read(&data) == 0) {
         return data.temperature;
     }
-    return -273.15; // Valor inválido
+    return -273.15; // Invalid value
 }
 
 double get_bme280_humidity(void)
@@ -58,7 +58,7 @@ double get_bme280_humidity(void)
     if (sensor_bme280_read(&data) == 0) {
         return data.humidity;
     }
-    return -1; // Valor inválido
+    return -1; // Invalid value
 }
 
 double get_bme280_pressure(void)
@@ -67,5 +67,5 @@ double get_bme280_pressure(void)
     if (sensor_bme280_read(&data) == 0) {
         return data.pressure;
     }
-    return -1; // Valor inválido
+    return -1; // Invalid value
 }

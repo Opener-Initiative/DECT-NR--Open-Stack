@@ -19,7 +19,7 @@ int txAssocBeacon(struct AssocBeaconMessage *abm, struct TXParams *tp){
     // mlmf_1_t mlmf_1;        //MAC Beacon Message - 13 bytes
 
 
-    //Montamos la cabecera física
+    // Assemble physical header
     abm -> plcf_10.HeaderFormat = 0;
     abm->plcf_10.PacketLengthType = 0;
     abm->plcf_10.PacketLength = 7;
@@ -31,20 +31,20 @@ int txAssocBeacon(struct AssocBeaconMessage *abm, struct TXParams *tp){
     abm->plcf_10.Reserved = 0;
     abm->plcf_10.DFMCS = 4;
 
-    //Montamos la cabecera MAC
+    // Assemble MAC header
     abm->mlcf_a.Version = 0;
     abm->mlcf_a.Security = 0;
     abm->mlcf_a.HeaderType = 1;
 
-    //Montamos la cabecera MAC del tipo elegido
+    // Assemble MAC header for chosen type
     abm->mlcf_b_2.NetworkID = (tp->networkID >> 8) & 0xFFFFFF;
     abm->mlcf_b_2.TransmitterAddress = tp->S_LRDID;
 
-    //Montamos la cabecera MAC MUX correspondiente
+    // Assemble corresponding MAC MUX header
     abm->mlcf_c_2.MAC_Ext = 0b00;
     abm->mlcf_c_2.IE_Type = 0b001000;
 
-    //Montamos el mensaje del beacon
+    // Assemble the beacon message
     abm->mlmf_2.Reserved = tp->isGW;
     abm->mlmf_2.TX_Power = 1;
     abm->mlmf_2.Power_Const = 0;
@@ -65,25 +65,25 @@ int txAssocBeacon(struct AssocBeaconMessage *abm, struct TXParams *tp){
 
     // printk("Reserved (Si es o no Gateway): %x\n", abm->mlmf_1.Reserved);
 
-    //Obtenemos la cabecera física montada
+    // Get assembled physical header
     get_plcf_1(&abm->plcf_10);
-    //Obtenemos la cabecera MAC montada
+    // Get assembled MAC header
     get_mlcf_a(&abm->mlcf_a);
-    //Obtenemos la cabecera MAC del tipo elegido
+    // Get assembled MAC header for chosen type
     get_mlcf_b_2(&abm->mlcf_b_2);
-    //Obtenemos la cabecera MAC MUX correspondiente
+    // Get assembled MAC MUX header
     get_mlcf_c_2(&abm->mlcf_c_2);
-    //Obtenemos el mensaje del beacon montado
+    // Get assembled beacon message
     get_mlmf_2(&abm->mlmf_2);
-    //Copiamos cabecera en buffer
+    // Copy physical header into buffer
     memcpy(abm->phyheader, &abm->plcf_10.plcf, 5);
-    //Copiamos en el contenido la cabecera MAC
+    // Copy MAC header into payload
     memcpy(abm->message, &abm->mlcf_a.mlcf_a, 1);
-    //Copiamos en el contenido la cabecera MAC del tipo elegido
+    // Copy MAC header for chosen type into payload
     memcpy(abm->message + 1, &abm->mlcf_b_2.mlcf_b_2, 7);
-    //Copiamos en el contenido la cabecera MAC MUX correspondiente
+    // Copy MAC MUX header into payload
     memcpy(abm->message + 8, &abm->mlcf_c_2.mlcf_c_2, 1);
-    //Copiamos en el contenido del mensaje beacon
+    // Copy beacon message into payload
     memcpy(abm->message + 9, &abm->mlmf_2.mlmf_2, 13);
 
     // printk("Transmitted ShortNetwork ID: %x\n", abm->phyheader[1]);
@@ -103,7 +103,7 @@ int txAssocReq(struct AssocReqMessage *aRm, struct TXParams *tp){
   // mlcf_c_2t mlcf_c_2;     //MAC MUX Header - Type c - 1 byte
   // mlmf_3_t mlmf_3;        //MAC Association Request Message - 14 bytes
 
-  //Montamos la cabecera física
+  // Assemble physical header
   aRm->plcf_20.HeaderFormat = 0;
   aRm->plcf_20.PacketLengthType = 0;
   aRm->plcf_20.PacketLength = 7;
@@ -124,12 +124,12 @@ int txAssocReq(struct AssocReqMessage *aRm, struct TXParams *tp){
   // printk("Transmitting Assoc Req to ShortNetworkID: %x\n", tp->SnetworkID);
   // printk("Transmitting Assoc Req from NetworkID: %x\n", tp->networkID);
 
-  //Montamos la cabecera MAC
+  // Assemble MAC header
   aRm->mlcf_a.Version = 0;
   aRm->mlcf_a.Security = 0;
   aRm->mlcf_a.HeaderType = 2;
 
-  //Montamos la cabecera MAC del tipo elegido
+  // Assemble MAC header for chosen type
   aRm->mlcf_b_3.Reserved = 0;
   aRm->mlcf_b_3.Reset = 1;
   aRm->mlcf_b_3.MACSequence = 1;
@@ -137,11 +137,11 @@ int txAssocReq(struct AssocReqMessage *aRm, struct TXParams *tp){
   aRm->mlcf_b_3.ReceiverAddress = tp->D_LRDID;
   aRm->mlcf_b_3.TransmitterAddress = tp->S_LRDID;
 
-  //Montamos la cabecera MAC MUX correspondiente
+  // Assemble corresponding MAC MUX header
   aRm->mlcf_c_2.MAC_Ext = 0b00;
   aRm->mlcf_c_2.IE_Type = 0b001010;
 
-  //Montamos el mensaje de asociación
+  // Assemble association message
   aRm->mlmf_4.Setup_Cause = 0;
   aRm->mlmf_4.N_Flows = 1;
   aRm->mlmf_4.Power_Const = 1;
@@ -164,27 +164,27 @@ int txAssocReq(struct AssocReqMessage *aRm, struct TXParams *tp){
   aRm->mlmf_4.Current_Cluster_Channel = 0;
 
 
-  //Obtenemos la cabecera física montada
+  // Get assembled physical header
   get_plcf_2(&aRm->plcf_20);
-  //Obtenemos la cabecera MAC montada
+  // Get assembled MAC header
   get_mlcf_a(&aRm->mlcf_a);
-  //Obtenemos la cabecera MAC del tipo elegido
+  // Get assembled MAC header for chosen type
   get_mlcf_b_3(&aRm->mlcf_b_3);
-  //Obtenemos la cabecera MAC MUX correspondiente
+  // Get assembled MAC MUX header
   get_mlcf_c_2(&aRm->mlcf_c_2);
-  //Obtenemos el mensaje del beacon montado
+  // Get assembled association message
   get_mlmf_4(&aRm->mlmf_4);
-  //Copiamos cabecera en buffer
+  // Copy physical header into buffer
   memcpy(aRm->phyheader, &aRm->plcf_20.plcf, 10);
-  //Copiamos en el contenido la cabecera MAC
+  // Copy MAC header into payload
   memcpy(aRm->message, &aRm->mlcf_a.mlcf_a, 1);
-  //Copiamos en el contenido la cabecera MAC del tipo elegido
+  // Copy MAC header for chosen type into payload
   memcpy(aRm->message + 1, &aRm->mlcf_b_3.mlcf_b_3, 10);
-  //Copiamos en el contenido la cabecera MAC MUX correspondiente
+  // Copy MAC MUX header into payload
   memcpy(aRm->message + 11, &aRm->mlcf_c_2.mlcf_c_2, 1);
-  //Copiamos en el contenido del mensaje beacon
+  // Copy association message into payload
   memcpy(aRm->message + 12, &aRm->mlmf_4.mlmf_4, 14);
-  // //Mandamos a enviar todo
+  // //Send everything (commented out)
   // modem_tx(aRm->message, 25, &aRm->phyheader, 5);
 
   return 1;
@@ -205,7 +205,7 @@ int txAssocResp(struct AssocRespMessage *arm, struct TXParams *tp){
 
   
 
-  //Montamos la cabecera física
+  // Assemble physical header
   arm->plcf_20.HeaderFormat = 0;
   arm->plcf_20.PacketLengthType = 0;
   arm->plcf_20.PacketLength = 7;
@@ -224,12 +224,12 @@ int txAssocResp(struct AssocRespMessage *arm, struct TXParams *tp){
   // printk("Transmitting Assoc Resp to LRDID: %x\n", tp->D_SRDID);
   // printk("Transmitting Assoc Resp from LRDID: %x\n", tp->S_SRDID);
 
-  //Montamos la cabecera MAC
+  // Assemble MAC header
   arm->mlcf_a.Version = 0;
   arm->mlcf_a.Security = 0;
   arm->mlcf_a.HeaderType = 2;
 
-  //Montamos la cabecera MAC del tipo elegido
+  // Assemble MAC header for chosen type
   arm->mlcf_b_3.Reserved = 0;
   arm->mlcf_b_3.Reset = 0;
   arm->mlcf_b_3.MACSequence = 0;
@@ -240,11 +240,11 @@ int txAssocResp(struct AssocRespMessage *arm, struct TXParams *tp){
   // printk("In sendAssocResp Receiver LRDID: %x\n", arm->mlcf_b_3.ReceiverAddress);
   // printk("In sendAssocResp Transmitter LRDID: %x\n", arm->mlcf_b_3.TransmitterAddress);
 
-  //Montamos la cabecera MAC MUX correspondiente
+  // Assemble corresponding MAC MUX header
   arm->mlcf_c_2.MAC_Ext = 0;
   arm->mlcf_c_2.IE_Type = 0b001011;
 
-  //Montamos el mensaje de respuesta a la asociación
+  // Assemble association response message
   arm->mlmf_5.ACK_NACK = 1;
   arm->mlmf_5.Reserved = 0;
   arm->mlmf_5.HARQ_mod = 0;
@@ -264,48 +264,48 @@ int txAssocResp(struct AssocRespMessage *arm, struct TXParams *tp){
   arm->mlmf_5.Reserved_3 = 0;
   arm->mlmf_5.Resource_TAG = 0;
 
-  // Montamos otra cabecera MAC MUX para coordinar el canal con Scheduled Access
+  // Assemble another MAC MUX header for coordinating channel with Scheduled Access
   arm->mlcf_c_2_2.MAC_Ext = 0;
   arm->mlcf_c_2_2.IE_Type = 0b010010;
 
-  // Montamos la IE de asignación de recursos
+  // Assemble the Resource Allocation IE
   arm->mlie_3.Allocation_Type = 0b10;           // Uplink only, configured responding 
   arm->mlie_3.Add = 0;                          // New configuration
   arm->mlie_3.ID = 1;                           // ID present
   arm->mlie_3.SFN_Value = tp->SFN;              // SFN value
 
 
-  //Obtenemos la cabecera física montada
+  // Get assembled physical header
   get_plcf_2(&arm->plcf_20);
-  //Obtenemos la cabecera MAC montada
+  // Get assembled MAC header
   get_mlcf_a(&arm->mlcf_a);
-  //Obtenemos la cabecera MAC del tipo elegido
+  // Get assembled MAC header for chosen type
   get_mlcf_b_3(&arm->mlcf_b_3);
-  //Obtenemos la cabecera MAC MUX correspondiente
+  // Get assembled MAC MUX header
   get_mlcf_c_2(&arm->mlcf_c_2);
-  //Obtenemos el mensaje montado de la respuesta a la asociación
+  // Get assembled association response message
   get_mlmf_5(&arm->mlmf_5);
-  //Obtenemos la cabecera MAC MUX para coordinar el canal con Scheduled Access
+  // Get MAC MUX header for coordinating channel with Scheduled Access
   get_mlcf_c_2(&arm->mlcf_c_2_2);
-  //Obtenemos la IE de asignación de recursos
+  // Get Resource Allocation IE
   get_mlie_3(&arm->mlie_3);
   
 
-  //Copiamos cabecera en buffer
+  // Copy physical header into buffer
   memcpy(arm->phyheader, &arm->plcf_20.plcf, 10);
-  //Copiamos en el contenido la cabecera MAC
+  // Copy MAC header into payload
   memcpy(arm->message, &arm->mlcf_a.mlcf_a, 1);
-  //Copiamos en el contenido la cabecera MAC del tipo elegido
+  // Copy MAC header for chosen type into payload
   memcpy(arm->message + 1, &arm->mlcf_b_3.mlcf_b_3, 10);
-  //Copiamos en el contenido la cabecera MAC MUX correspondiente
+  // Copy MAC MUX header into payload
   memcpy(arm->message + 11, &arm->mlcf_c_2.mlcf_c_2, 1);
-  //Copiamos en el contenido del mensaje beacon
+  // Copy message into payload
   memcpy(arm->message + 12, &arm->mlmf_5.mlmf_5, 7);
-  //Copiamos el contenido de la cabecera MAC MUX para coordinar el canal con Scheduled Access
+  // Copy MAC MUX header content for coordinating channel with Scheduled Access
   memcpy(arm->message + 19, &arm->mlcf_c_2_2.mlcf_c_2, 1);
-  //Copiamos el contenido de la IE de asignación de recursos
+  // Copy Resource Allocation IE content
   memcpy(arm->message + 20, &arm->mlie_3.mlie_3, 16);
-  //Mandamos a enviar todo
+  // Send everything (commented out)
   // modem_tx(arm->message, 18, &arm->phyheader, 5);
 
   return 0;
@@ -322,7 +322,7 @@ int txData(struct DataMessage *dm, struct TXParams *tp){
   // mlcf_c_t mlcf_c_4;     //MAC MUX Header - Type e - 4 bytes
                             //MAC Data Message - XXXXX bytes
 
-  //Montamos la cabecera física
+  // Assemble physical header
     
   dm->plcf_10.HeaderFormat = 0;
   dm->plcf_10.PacketLengthType = 0;
@@ -333,47 +333,47 @@ int txData(struct DataMessage *dm, struct TXParams *tp){
   // dm->plcf_10.ReceiverIdentity = tp->D_SRDID;
   dm->plcf_10.DFMCS = 4;
 
-  //Montamos la cabecera MAC
+  // Assemble MAC header
   dm->mlcf_a.Version = 0;
   dm->mlcf_a.Security = 0;
   dm->mlcf_a.HeaderType = 0;  
 
-  //Montamos la cabecera MAC del tipo elegido
+  // Assemble MAC header for chosen type
   if(IS_GATEWAY)    dm->mlcf_b_1.Reserved = 0;
   else              dm->mlcf_b_1.Reserved = tp->SFN;
   dm->mlcf_b_1.Reset = tp->reset;
   dm->mlcf_b_1.SequenceNumber = tp->sequenceNumber;
 
-  //Montamos la cabecera MAC MUX correspondiente
+  // Assemble corresponding MAC MUX header
   dm->mlcf_c_4.MAC_Ext = 0b10;
   dm->mlcf_c_4.IE_Type = 0b000011;
   dm->mlcf_c_4.Length = 693;
 
-  //Datos de aplicacion
+  // Application data
   // dm->payload;
 
 
 
 
-  //Obtenemos la cabecera física montada
+  // Get assembled physical header
   get_plcf_1(&dm->plcf_10);
-  //Obtenemos la cabecera MAC montada
+  // Get assembled MAC header
   get_mlcf_a(&dm->mlcf_a);
-  //Obtenemos la cabecera MAC del tipo elegido
+  // Get assembled MAC header for chosen type
   get_mlcf_b_1(&dm->mlcf_b_1);
-  //Obtenemos la cabecera MAC MUX correspondiente
+  // Get assembled MAC MUX header
   get_mlcf_c_4(&dm->mlcf_c_4);
-  //Copiamos cabecera en buffer
+  // Copy physical header into buffer
   memcpy(dm->phyheader, &dm->plcf_10.plcf, 5);
-  //Copiamos en el contenido la cabecera MAC
+  // Copy MAC header into payload
   memcpy(dm->mac_header, &dm->mlcf_a.mlcf_a, 1);
-  //Copiamos en el contenido la cabecera MAC del tipo elegido
+  // Copy MAC header for chosen type into payload
   memcpy(dm->mac_header + 1, &dm->mlcf_b_1.mlcf_b_1, 2);
-  //Copiamos en el contenido la cabecera MAC MUX correspondiente
+  // Copy MAC MUX header into payload
   memcpy(dm->mac_header + 3, &dm->mlcf_c_4.mlcf_c_4, 4);
-  //Copiamos la cabecera MAC en el buffer
+  // Copy MAC header into buffer
   memcpy(dm->payload, &dm->mac_header, 7);
-  //Copiamos los datos en el buffer
+  // Copy data into buffer
   memcpy(dm->payload + 7, &dm->data, 700-7);
 
   return 1;
@@ -393,7 +393,7 @@ int txBroIndIE(struct BroIndIE *bim, struct TXParams *tp){
 
 
 
-  //Montamos la cabecera física
+  // Assemble physical header
   bim->plcf_10.HeaderFormat = 0;
   bim->plcf_10.PacketLengthType = 0;
   bim->plcf_10.PacketLength = 7;
@@ -403,21 +403,21 @@ int txBroIndIE(struct BroIndIE *bim, struct TXParams *tp){
   bim->plcf_10.DFMCS = 4;
 
 
-  //Montamos la cabecera MAC
+  // Assemble MAC header
   bim->mlcf_a.Version = 0;
   bim->mlcf_a.Security = 0;
   bim->mlcf_a.HeaderType = 0;
 
-  //Montamos la cabecera MAC del tipo elegido
+  // Assemble MAC header for chosen type
   bim->mlcf_b_1.Reserved = 0;
   bim->mlcf_b_1.Reset = tp->reset;
   bim->mlcf_b_1.SequenceNumber = 0;
 
-  //Montamos la cabecera MAC MUX correspondiente
+  // Assemble corresponding MAC MUX header
   bim->mlcf_c_2.MAC_Ext = 0b00;
   bim->mlcf_c_2.IE_Type = 0b010110;
 
-  //Montamos el mensaje de indicación de broadcast
+  // Assemble Broadcast Indication message
   bim->mlie_7.Indication_Type = 0;      // Paging
   bim->mlie_7.IDType = 0;               // Short
   bim->mlie_7.ACK_NACK = 0;             
@@ -426,27 +426,27 @@ int txBroIndIE(struct BroIndIE *bim, struct TXParams *tp){
   bim->mlie_7.LongShort_RDID = tp->D_SRDID; // Depende de si se quiere largo o corto
   bim->mlie_7.MCS_MIMO_Feedback = 0;
 
-  //Obtenemos la cabecera física montada
+  // Get assembled physical header
   get_plcf_1(&bim->plcf_10);
-  //Obtenemos la cabecera MAC montada
+  // Get assembled MAC header
   get_mlcf_a(&bim->mlcf_a);
-  //Obtenemos la cabecera MAC del tipo elegido
+  // Get assembled MAC header for chosen type
   get_mlcf_b_1(&bim->mlcf_b_1);
-  //Obtenemos la cabecera MAC MUX correspondiente
+  // Get assembled MAC MUX header
   get_mlcf_c_2(&bim->mlcf_c_2);
-  //Copiamos cabecera en buffer
+  // Copy physical header into buffer
   memcpy(bim->phyheader, &bim->plcf_10.plcf, 5);
-  //Copiamos en el contenido la cabecera MAC
+  // Copy MAC header into payload
   memcpy(bim->mac_header, &bim->mlcf_a.mlcf_a, 1);
-  //Copiamos en el contenido la cabecera MAC del tipo elegido
+  // Copy MAC header for chosen type into payload
   memcpy(bim->mac_header + 1, &bim->mlcf_b_1.mlcf_b_1, 2);
-  //Copiamos en el contenido la cabecera MAC MUX correspondiente
+  // Copy MAC MUX header into payload
   memcpy(bim->mac_header + 3, &bim->mlcf_c_2.mlcf_c_2, 1);
-  //Copiamos en el contenido la cabecera MAC MUX correspondiente
+  // Copy MAC MUX content into payload
   memcpy(bim->mac_header + 4, &bim->mlie_7.mlie_7, 4);
-  //Copiamos la cabecera MAC en el buffer
+  // Copy MAC header into buffer
   memcpy(bim->payload, &bim->mac_header, 9);
-  //Copiamos en el contenido del mensaje con información de la red si la hubiera
+  // Copy network info into payload if present
   // memcpy(bim->payload + 14, &bim->message, 700-14);
 
   // printk("Payload: %s\n", bim->payload);
@@ -465,7 +465,7 @@ int txKAm_IE(struct KAm *kam, struct TXParams *tp){
   // mlcf_c_1t mlcf_c_1;     //MAC MUX Header - Type c - 1 byte
 
 
-  //Montamos la cabecera física
+  // Assemble physical header
   kam->plcf_20.HeaderFormat = 1;
   kam->plcf_20.PacketLengthType = 0;
   kam->plcf_20.PacketLength = 7;
@@ -482,42 +482,42 @@ int txKAm_IE(struct KAm *kam, struct TXParams *tp){
   kam->plcf_20.FeedbackInfo = 0;
 
 
-  //Montamos la cabecera MAC
+  // Assemble MAC header
   kam->mlcf_a.Version = 0;
   kam->mlcf_a.Security = 0;
   kam->mlcf_a.HeaderType = 0;
 
-  //Montamos la cabecera MAC del tipo elegido
+  // Assemble MAC header for chosen type
   kam->mlcf_b_1.Reserved = 0;
   kam->mlcf_b_1.Reset = tp->reset;
   kam->mlcf_b_1.SequenceNumber = 0;
 
-  //Montamos la cabecera MAC MUX correspondiente
+  // Assemble corresponding MAC MUX header
   kam->mlcf_c_1.MAC_Ext = 0b11;
   kam->mlcf_c_1.Length = 0;
   kam->mlcf_c_1.IE_Type = 0b00010;
 
-  //Obtenemos la cabecera física montada
+  // Get assembled physical header
   get_plcf_2(&kam->plcf_20);
-  //Obtenemos la cabecera MAC montada
+  // Get assembled MAC header
   get_mlcf_a(&kam->mlcf_a);
-  //Obtenemos la cabecera MAC del tipo elegido
+  // Get assembled MAC header for chosen type
   get_mlcf_b_1(&kam->mlcf_b_1);
-  //Obtenemos la cabecera MAC MUX correspondiente
+  // Get assembled MAC MUX header
   get_mlcf_c_1(&kam->mlcf_c_1);
-  //Copiamos cabecera en buffer
+  // Copy physical header into buffer
   memcpy(kam->phyheader, &kam->plcf_20.plcf, 10);
-  //Copiamos en el contenido la cabecera MAC
+  // Copy MAC header into payload
   memcpy(kam->mac_header, &kam->mlcf_a.mlcf_a, 1);
-  //Copiamos en el contenido la cabecera MAC del tipo elegido
+  // Copy MAC header for chosen type into payload
   memcpy(kam->mac_header + 1, &kam->mlcf_b_1.mlcf_b_1, 2);
-  //Copiamos en el contenido la cabecera MAC MUX correspondiente
+  // Copy MAC MUX header into payload
   memcpy(kam->mac_header + 3, &kam->mlcf_c_1.mlcf_c_1, 1);
 
   
-  //Copiamos la cabecera MAC en el buffer
+  // Copy MAC header into buffer
   memcpy(kam->payload, &kam->mac_header, 4);
-  //Copiamos en el contenido del mensaje con información de la red si la hubiera
+  // Copy network info into payload if present
   memcpy(kam->payload + 4, &kam->message, 700-4);
   
 
@@ -533,7 +533,7 @@ int txMetricReq(struct MetricMessage *mr, struct TXParams *tp){
   // mlcf_b_1t mlcf_b_1;     //DATA MAC PDU Header - 2 bytes
 
 
-  //Montamos la cabecera física
+  // Assemble physical header
   mr->plcf_10.HeaderFormat = 0;
   mr->plcf_10.PacketLengthType = 0;
   mr->plcf_10.PacketLength = 7;
@@ -543,34 +543,34 @@ int txMetricReq(struct MetricMessage *mr, struct TXParams *tp){
   mr->plcf_10.DFMCS = 4;
 
 
-  //Montamos la cabecera MAC
+  // Assemble MAC header
   mr->mlcf_a.Version = 0;
   mr->mlcf_a.Security = 0;
   mr->mlcf_a.HeaderType = 0;
 
-  //Montamos la cabecera MAC del tipo elegido
+  // Assemble MAC header for chosen type
   // mr->mlcf_b_1.Reserved = 0;               // Modified in main.c
   // printk("Reserved in sendMetricReq: %x\n", mr->mlcf_b_1.Reserved);
   mr->mlcf_b_1.Reset = tp->reset;
   mr->mlcf_b_1.SequenceNumber = tp->sequenceNumber;
 
-  //Obtenemos la cabecera física montada
+  // Get assembled physical header
   get_plcf_1(&mr->plcf_10);
-  //Obtenemos la cabecera MAC montada
+  // Get assembled MAC header
   get_mlcf_a(&mr->mlcf_a);
-  //Obtenemos la cabecera MAC del tipo elegido
+  // Get assembled MAC header for chosen type
   get_mlcf_b_1(&mr->mlcf_b_1);
 
-  //Copiamos cabecera en buffer
+  // Copy physical header into buffer
   memcpy(mr->phyheader, &mr->plcf_10.plcf, 5);
-  //Copiamos en el contenido la cabecera MAC
+  // Copy MAC header into payload
   memcpy(mr->mac_header, &mr->mlcf_a.mlcf_a, 1);
-  //Copiamos en el contenido la cabecera MAC del tipo elegido
+  // Copy MAC header for chosen type into payload
   memcpy(mr->mac_header + 1, &mr->mlcf_b_1.mlcf_b_1, 2);
   
-  //Copiamos la cabecera MAC en el buffer
+  // Copy MAC header into buffer
   memcpy(mr->payload, &mr->mac_header, 3);
-  //Copiamos en el contenido del mensaje con información de la red si la hubiera
+  // Copy network info into payload if present
   memcpy(mr->payload + 3, &mr->message, 700-3);
 
 
@@ -616,25 +616,25 @@ int getStatusDevNet(struct StatusDevNet *sdn)
 
 int setStatusDevNet(struct StatusDevNet *sdn)
 {
-    // Configurar los valores de la estructura StatusDevNet a partir del buffer de datos
+    // Set StatusDevNet fields from the data buffer
 
     sdn->IsFT = (sdn->sdn[0] >> 7) & 0x01;
     sdn->IsGW = (sdn->sdn[0] >> 6) & 0x01;
     sdn->DataLength = sdn->sdn[0] & 0x3F;
     sdn->NetworkID = (sdn->sdn[1] << 24) | (sdn->sdn[2] << 16) | (sdn->sdn[3] << 8) | sdn->sdn[4];
 
-    // Calcular el número de dispositivos
+    // Calculate the number of devices
     sdn->n_devices = sdn->DataLength;
 
     // printk("DataLength: %d\n", sdn->DataLength);
 
-    // Configurar los valores de LRDID a partir del buffer de datos
+    // Set LRDID values from the data buffer
     for (int i = 0; i < sdn->n_devices+1; i++) {
         sdn->LRDID[i] = (sdn->sdn[5 + i * 4] << 24) | (sdn->sdn[6 + i * 4] << 16)
          | (sdn->sdn[7 + i * 4] << 8) | sdn->sdn[8 + i * 4];
     }
 
-    // //Imprimir los datos extraídos
+    // // Print extracted data
     // printk("IsFT: %x\n", sdn->IsFT);
     // printk("IsGW: %x\n", sdn->IsGW);
     // printk("DataLength: %x\n", sdn->DataLength);

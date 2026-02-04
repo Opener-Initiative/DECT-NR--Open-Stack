@@ -13,10 +13,10 @@ struct bme280_data {
     float pressure;
 };
 
-/* Inicializa el sensor BME280 */
+/* Initialize the BME280 sensor */
 int sensor_bme280_init(void);
 
-/* Lee datos del sensor BME280 */
+/* Read data from the BME280 sensor */
 int sensor_bme280_read(struct bme280_data *data);
 
 #endif /* SENSOR_BME280_H */

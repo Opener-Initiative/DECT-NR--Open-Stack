@@ -18,7 +18,7 @@
 
 LOG_MODULE_REGISTER(modem_h);
 
-/* semáforo para serializar llamadas async al modem (copiado de tu main.c) */
+/* Semaphore to serialize async modem calls (copied from main.c) */
 K_SEM_DEFINE(modem, 0, 1);
 K_SEM_DEFINE(no_modem, 0, 1);
 /* Flag set on fatal modem error; marked unused to avoid warnings until used */
@@ -36,7 +36,7 @@ static struct TXParams tp;
 static bool setContinuousRx = false;
 
 
-/* variables de estado local (adaptadas de main.c) */
+/* local state variables (adapted from main.c) */
 static int crc_errors __attribute__((unused)) = 0;
 static float rssi_average = 0;
 static int n = 0;
@@ -226,7 +226,7 @@ static void on_pdc(const struct nrf_modem_dect_phy_pdc_event *evt)
     int32_t rx_rssi = calcRSSI(evt->rssi_2, 1);
     // LOG_INF("pdc_cb rssi_2 %d, len %d", rx_rssi, evt->len);
 
-    /* Enviar datos a la cola */
+    /* Send data to the queue */
     // if(IS_GATEWAY)
     // {
     //     if (!app_rx_buffer_write(&evt->data[7], 693)) {
@@ -486,19 +486,19 @@ void modem_tx(uint8_t* data, size_t datasize, uint8_t* phyheader, size_t phyhead
 
 void request_rssi_measurement(void)
 {
-    /* ejemplo: rellena rxOpsParams para medición de RSSI y llama a modem_rx o API específica */
-    LOG_DBG("request_rssi_measurement: pidiendo medida RSSI");
-    /* en tu main usabas struct nrf_modem_dect_phy_rssi_params y request_rssi_measurement(rssiParams) */
-}
+    /* Example: fill rxOpsParams for an RSSI measurement and call modem_rx or a specific API */
+    LOG_DBG("request_rssi_measurement: requesting RSSI measurement");
+    /* In your main you used struct nrf_modem_dect_phy_rssi_params and request_rssi_measurement(rssiParams) */
+} 
 
 void config_default_rx_params(void)
 {
-    // Limpiar estructura antes de configurar
+    // Clear structure before configuring
     memset(&rxOpsParams, 0, sizeof(rxOpsParams));
 
     rxOpsParams.start_time = 0; //start immediately
     rxOpsParams.handle = 31400;
-    rxOpsParams.network_id = 0;  // Usar valor por defecto o NETWORK_ID si está disponible
+    rxOpsParams.network_id = 0;  // Use default value or NETWORK_ID if available
     rxOpsParams.mode = NRF_MODEM_DECT_PHY_RX_MODE_SINGLE_SHOT;
     rxOpsParams.link_id = NRF_MODEM_DECT_PHY_LINK_UNSPECIFIED;
     rxOpsParams.rssi_level = -60;
@@ -506,7 +506,7 @@ void config_default_rx_params(void)
     // modem clock ticks NRF_MODEM_DECT_MODEM_TIME_TICK_RATE_KHZ --> 69120*1000* TIME_S
     rxOpsParams.duration = 2*69120*1000; 
     //filter on the short network id, last 8 bits of the network identifier in dect nr
-    rxOpsParams.filter.short_network_id = (uint8_t)(0x0a);  // Valor por defecto
+    rxOpsParams.filter.short_network_id = (uint8_t)(0x0a);  // Default value
     rxOpsParams.filter.is_short_network_id_used = 0;
     //listen for everything (broadcast mode used)
     rxOpsParams.filter.receiver_identity = 0;
@@ -571,15 +571,15 @@ void modem_op_start(void)
     modem_free = false;
     /* Notify tx_consumer that modem is busy */
     modem_operator_set_modem_free(false);
-    // LOG_INF("Modem ocupado");
-}
+    // LOG_INF("Modem busy");
+} 
 
 void modem_op_complete(void)
 {
     modem_free = true;
     /* Notify tx_consumer that modem is free */
     modem_operator_set_modem_free(true);
-    // LOG_INF("Modem liberado");
+    // LOG_INF("Modem free");
 }
 
 bool is_modem_free(void)

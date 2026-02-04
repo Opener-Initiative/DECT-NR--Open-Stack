@@ -173,7 +173,7 @@ void timer_consumer_thread(void)
 {
     while (1) {
         struct timer_event evt = timers_get_event(K_FOREVER);
-        // app_on_timer_event(&evt);   // delegada la acción a app_state.c
+        // app_on_timer_event(&evt);   // action delegated to app_state.c
         struct fsm_event f_evt = {
             .type = FSM_EVENT_TIMER,
             .timer = evt,

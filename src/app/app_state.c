@@ -28,7 +28,7 @@ static bool FT_OP = false;
 static struct TXParams tp;
 static struct DataMessage dm;
 static bool ftOperationsDone = false;
-//// associated y isFT están definidas en network.c como variable global
+/* 'associated' and 'isFT' are defined as global variables in network.c */
 
 void app_ftOperationsDone_set(bool state) {ftOperationsDone = state;}
 bool app_ftOperationsDone_get(void) {return ftOperationsDone;}
@@ -68,17 +68,17 @@ void app_init(void)
 /// @param len 
 void app_on_uart_data(const uint8_t *data, size_t len)
 {
-    /* ejemplo simple: empaquetar y enviar como DataMessage */
+    /* simple example: pack and send as DataMessage */
     size_t copy_len = len > sizeof(dm.payload) ? sizeof(dm.payload) : len;
     memcpy(dm.payload, data, copy_len);
 
-    /* llama a la función que genera la PDU (procedures.c) */
+    /* call the function that generates the PDU (procedures.c) */
     txData(&dm, &tp);
 
-    /* y manda por modem (usa wrapper modem_tx) */
+    /* and send via modem (uses modem_tx wrapper) */
     modem_tx(dm.payload, sizeof(dm.payload), dm.phyheader, 5, 0);
 
-    LOG_INF("app_on_uart_data: enviado paquete (len=%d)", (int)copy_len);
+    LOG_INF("app_on_uart_data: sent packet (len=%d)", (int)copy_len);
 }
 
 int app_get_state(void){ return STATE; }

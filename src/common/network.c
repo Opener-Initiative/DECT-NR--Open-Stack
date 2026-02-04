@@ -8,7 +8,7 @@
 
 LOG_MODULE_REGISTER(network);
 
-// Variables globales
+// Global variables
 struct Network registeredNetworks[10];
 int network_index = 1;
 int registeredNetworks_index = 0;
@@ -22,7 +22,7 @@ static bool ftOperationsDone = false;
 
 
 
-// Network inicialization
+// Network initialization
 void network_init(void)
 {
     /// Initialize SFN pool
@@ -81,7 +81,7 @@ void network_init(void)
     }
 }
 
-// Actualiza la lista de dispositivos conectados a la red
+// Update list of devices connected to the network
 void deviceListUpdate(void)
 {
     for (int i = 0; i < networks[0].n_devices; i++) {
@@ -126,7 +126,7 @@ void deviceListUpdate(void)
     }
 }
 
-// Verifica si un LRDID recibido pertenece a mis redes registradas
+// Check if a received LRDID belongs to my registered networks
 bool checkDestination(uint32_t LRDID)
 {
     for (int i = 0; i < network_index; i++) {
@@ -141,7 +141,7 @@ bool checkDestination(uint32_t LRDID)
     return false;
 }
 
-// Registra una red si no estaba registrada previamente
+// Register a network if it wasn't previously registered
 bool networkCheck(uint32_t networkID, uint32_t FT)
 {
     uint32_t nID;
@@ -154,7 +154,7 @@ bool networkCheck(uint32_t networkID, uint32_t FT)
     networks[network_index].networkID = nID;
     networks[network_index].network_FT = FT;
     networks[network_index].own_LRDID = generate_long_RDID(rd_id, networkID);
-    // YA NO (own_LRDID se calcula fuera con generate_long_RDID())
+    // NO LONGER (own_LRDID is calculated externally with generate_long_RDID())
     network_index++;
     return false;
 }
@@ -166,7 +166,7 @@ bool deviceCheck(uint16_t SRDID)
         LOG_INF("Device already associated");
 
         struct TXParams *tp = get_TP();
-        tp->D_LRDID = networks[0].list_LRDID[i][0]; // Utiliza el RDID del paquete para enviar la respuesta
+        tp->D_LRDID = networks[0].list_LRDID[i][0]; // Use the RDID from the packet to send the response
         tp->SFN = networks[0].list_LRDID[i][2]; // SFN of the device that is already associated
 
         networks[0].list_LRDID[i][1] = 3; // Reset the timer of the device that is already associated
@@ -177,11 +177,11 @@ bool deviceCheck(uint16_t SRDID)
     return false;
 }
 
-// Empaqueta la información de red en un mensaje
+// Pack network information into a message
 int getNetworkInfo(uint8_t *message)
 {
     struct StatusDevNet sdn;
-    sdn.IsFT = false; // se puede actualizar fuera
+    sdn.IsFT = false; // can be updated externally
     sdn.NetworkID = networks[0].networkID;
     sdn.n_devices = networks[0].n_devices;
     sdn.DataLength = networks[0].n_devices;

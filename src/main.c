@@ -2,7 +2,7 @@
 
 // DECT NR+ implementation in progress
 // Property of Universidad Politécnica de Cartagena, QARTIA Department.
-// Autor: Iván Tomás García (ivan.tomas@edu.upct.es)
+// Author: Iván Tomás García (ivan.tomas@edu.upct.es)
 // Start project date: 4/3/2023
 
 // ****************************************************************************

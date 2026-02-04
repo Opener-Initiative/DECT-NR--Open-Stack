@@ -7,7 +7,7 @@
 
 struct timer_event;
 
-/// @brief FSM states - Estados de la máquina de estados
+/// @brief FSM states (finite state machine)
 enum app_states {
     ASSOC_WIN_STATE = 100,
     DATA_WIN_STATE = 200,
