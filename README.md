@@ -6,7 +6,7 @@ The project models the standard using a **finite state machine (FSM)** and integ
 
 The code was developed by the Universidad Politécnica de Cartagena (UPCT) in cooperation with the Ostfalia University of Applied Sciences as part of the Franco-German joint research project "Media and Event production via Resilient Communication on IoT Infrastructure" (MERCI, grant number 01MJ22016D).
 
-Questions about the code should be directed to [@Ivanfroste24](https://github.com/Ivanfroste24), [@lala9](https://github.com/lala9), and [@antoniojaviergarciasanchez](https://github.com/antoniojaviergarciasanchez).
+Please place any questions, suggestions and enhancements in the [issue tracker](https://github.com/Opener-Initiative/DECT-NR--Open-Stack/issues) or the [pull requests](https://github.com/Opener-Initiative/DECT-NR--Open-Stack/pulls).
 
 ## 🧩 Context Overview
 
