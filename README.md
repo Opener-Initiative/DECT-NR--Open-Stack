@@ -1,8 +1,8 @@
-# C Code DECT NR+ Implementation over nRF9161
+# C Code DECT NR+ Implementation over nRF91
 
 This repository contains work-in-progress source code and resources for a communication system prototype implementing the **DECT-2020** standard on the **Nordic nRF91X1** System-in-Package (SiP).
 
-The project models the standard using a **finite state machine (FSM)** and integrates the modem via the official **nRF Modem API** to ensure real-time, low-latency operation.
+The project models the standard using a **finite state machine (FSM)** and integrates the modem via the official **nrf_modem_dect_phy.h** API to ensure real-time, low-latency operation.
 
 The code was developed by the Universidad Politécnica de Cartagena (UPCT) in cooperation with the Ostfalia University of Applied Sciences as part of the Franco-German joint research project "Media and Event production via Resilient Communication on IoT Infrastructure" (MERCI, grant number 01MJ22016D).
 
@@ -37,7 +37,7 @@ Please place any questions, suggestions and enhancements in the [issue tracker](
 │   │   ├── headers                 # DECT NR+ header formatting
 │   │   ├── protocol                # Protocol procedures
 │   │   └── main.c
-│   ├── build/                      # Sample build configuration
+│   ├── build/                      # Sample build folder
 │   ├── overlay/                    # Overlays for builds
 │   ├── CMakeLists.txt
 │   └── prj.conf
@@ -47,20 +47,23 @@ Please place any questions, suggestions and enhancements in the [issue tracker](
 
 ## 🛠️ Usage
 
-For a simple approach to the preconfigured Demo, precompiled files are available in the release version. Program *GATEWAY.hex* in the FT device and *SENSOR.hex* in the PT device that will have attached the recommended sensor.
+For a simple approach to the preconfigured Demo, precompiled files are available in the release version folder hexbuilds. Program *GATEWAY.hex* in the FT device and *SENSOR.hex* in the PT device that will have attached the recommended sensor.
 
 ## ⚙️ Building and Running
 
 1. **Requirements**
-    - Nordic SDK and toolchain (minimum v2.5.0)
-    - DECT modem firmware (minimum v0.5.0-110 prealpha)
+    - Nordic SDK and toolchain (minimum v3.0.0)
+    - DECT modem firmware (minimum v1.1.0, Nordic provides the firmware free of charge, please contact Nordic sales)
     - ~~(Optional) OLED Display SSD1306 0.91 inches~~
     - (Optional) Environmental sensor HTU21D
 
-2. **Build**
-    Compile with VS Code + nRF Connect extension, or use west/cmake.
+The DECT NR+ is supported in specific modem firmware. You need to reprogram the modem firmware on Nordic nrf91 DevKits. For example with https://www.nordicsemi.com/Products/Development-tools/nRF-Connect-for-Desktop
+The stack implementation uses Nordic Connect SDK (NCS for short), please see https://docs.nordicsemi.com/bundle/ncs-latest/page/nrf/installation/install_ncs.html how to install the NCS for Zephyr developement on Nordic hardware.  
 
-3. **Run**
+2. **Build**
+    - Compile with VS Code + nRF Connect extension, or use west/cmake.
+
+4. **Run**
     - Use the physical hardware to view the real-time demonstrator ~~with the display~~, or run a console using nRF Connect or any serial terminal.
     - Observe FSM transitions and modem events in real time using serial terminal, and monitor data transmission over a DECT NR+ network.
 
@@ -124,6 +127,9 @@ Removed support for OLED Display, data received shall be displayed using a seria
 ## 🧾 References
 
 * [ETSI TS 103 636 Series – DECT-2020 NR Specification](https://www.etsi.org/deliver/etsi_ts/103600_103699/10363601/)
-* [Nordic Semiconductor nRF9161 Documentation](https://www.nordicsemi.com/Products/nRF9161)
+* [Nordic Semiconductor nRF9151-DevKit Documentation](https://www.nordicsemi.com/Products/Development-hardware/nRF9151-DK)
+* [Nordic Semiconductor nrfConnect for Desktop](https://www.nordicsemi.com/Products/Development-tools/nRF-Connect-for-Desktop)
+* [Nordic Semiconductor nrfConnect SDK](https://docs.nordicsemi.com/bundle/ncs-latest/page/nrf/installation/install_ncs.html)
 * [Zephyr Project](https://zephyrproject.org/)
+  
 
