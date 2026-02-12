@@ -46,8 +46,8 @@ Please place any questions, suggestions and enhancements in the [issue tracker](
 ```
 
 ## 🛠️ Usage
-
-For a simple approach to the preconfigured Demo, precompiled files are available in the release version. Program *GATEWAY.hex* in the FT device and *SENSOR.hex* in the PT device that will have attached the recommended sensor.
+Application mode, sensor or gateway, is selected in prj.conf with CONFIG_SENSOR= y / n(N meaning gateway mode)
+For a simple approach to the preconfigured Demo, precompiled files for nrf9151-DevKit are available in the demoHex folder. Program *GATEWAY.hex* in the FT device and *SENSOR.hex* in the PT device that will have attached the recommended sensor.
 
 ## ⚙️ Building and Running
 
